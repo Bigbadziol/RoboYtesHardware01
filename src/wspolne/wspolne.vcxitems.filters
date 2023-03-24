@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Text Include="$(MSBuildThisFileDirectory)readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)BdlBluetoothSerial.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)setup.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesAudio.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesServo.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesNaped.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)BdlBluetoothSerial.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)setup.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesAudio.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesServo.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesNaped.h" />
+  </ItemGroup>
+</Project>

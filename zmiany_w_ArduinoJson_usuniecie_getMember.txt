@@ -1,0 +1,50 @@
+Bedzie duzo roboty z ledzikiem , bo znika --getMember(),
+Dzialajace testy:
+	//const char* vLG = (*dane)["KLUCZ"].as<const char*>(); //lyka
+	//int noweDane = (*dane)["LG"].as<int>();//lyka
+	//if (noweDane) {}
+
+//---------------------------------------------------------------------
+void test() {
+	StaticJsonDocument<256> doc;
+	JsonObject jo= doc.to<JsonObject>();
+
+	JsonVariant vLG = jo["LG"];
+	if (!vLG.isNull()) {
+		int wartosc = vLG.as<int>();
+	}
+}
+
+//--------------------------------------------------------------------
+
+class YtesAudio {
+public:
+	void obslozPolecenieDane(JsonObject* dane) {
+		// uzyskanie wartoœci pola KLUCZ
+		const char* vLG = (*dane)["KLUCZ"].as<const char*>();
+
+		// sprawdzenie, czy wartoœæ jest null lub nie istnieje
+		if (vLG == nullptr) {
+			Serial.println(F("Error: KLUCZ is missing"));
+			return;
+		}
+
+		Serial.println(vLG);
+	}
+};
+
+void setup() {
+	// utworzenie przyk³adowego obiektu JSON
+	DynamicJsonDocument doc(1024);
+	deserializeJson(doc, "{\"KLUCZ\": \"wartosc\"}");
+
+	// uzyskanie wskaŸnika na obiekt JSON
+	JsonObject* dane = &doc.as<JsonObject>();
+
+	YtesAudio audio;
+	audio.obslozPolecenieDane(dane);
+}
+
+void loop() {
+}
+	

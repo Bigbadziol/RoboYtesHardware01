@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{a58cbfd8-9c0e-49e2-9d1b-b7ebc0ef68cf}</ItemsProjectGuid>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="$(MSBuildThisFileDirectory)readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)BdlBluetoothSerial.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)setup.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesAudio.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesNaped.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesServo.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)BdlBluetoothSerial.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)setup.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesAudio.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesNaped.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesServo.h" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,20 @@
+MP3 Player:
+-----------------------------------
+ Z dokumentacji :
+ play/pause - dzia³a jak toggle
+ sleep / wakeUp - ma dzia³aæ  dla oszczêdzania baterii, zatem olaæ
+ DFPlayerMini_Fast" - polecane jako zamiennik bo ponoc lepiej dzia³a - sprawdziæ
+
+Odpowiedz z wskazanego playera, Faktycznie bedzie to odpowiedz z klasy bo sam player nie obsluguje w pe³ni plikow.
+Pos³uguje siê indexami plikow (uk³ad zwyczajnie zlicza iloœæ plikow w wskazanym folderze i odpala plik nr "7")
+
+Info z DFPlayerMini_Fast:
+If you are using multiple DFPlayers with SoftwareSerial, it is necessary to make your SoftwareSerial instance
+listen (i.e. SoftwareSerial.listen()) before calling queries such as .isPlaying() or .currentVolume().
+
+Serwa 360 - wielkie nic w sieci
+-------------------------------
+Z : https://forbot.pl/forum/topic/10561-arduino-sterowanie-serwem-360feetech-fs90r-jak/
+Wysy³asz mu sygna³ PWM o czêstotliwoœci 50Hz z zadan¹ d³ugoœci¹ impulsu. Przy impulsie 1500us serwo stoi w miejscu,
+przy mniejszym obraca siê w jedn¹ stronê, przy wiêkszym w drug¹, tym szybciej im bardziej impuls ró¿ni siê od tych œrodkowych 1500us.
+

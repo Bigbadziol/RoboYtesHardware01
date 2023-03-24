@@ -1,0 +1,85 @@
+//----------------------------------------------------------------------------------------------
+// Ogolne
+//----------------------------------------------------------------------------------------------
+Wszystko jsonem.
+Zakladamy , ze nazwa parametru jest zawsze "ignoreCase"
+Do konkretnego modu³u(mp3/silnik krokowy,..) ma trafiac zawsze trafiac obiekt "data"
+Trzeba mieæ na uwadze,¿e lepiej nie budowaæ zbyt wielkich blokow polecen bo pojawi¹ siê probemy z cachowaniem informacji.
+Przykladowo : po restarcie mp3Playera na nowo trzeba ustawic glosnosc
+{
+	"cmd" : "modul"
+	"data" : {
+		parametr1 : 4,
+		parametr2 : 1, (true/false - pamietaæ o problemie konwersji Gson-Kotlin a ArduinoJson-Esp32)
+		parametr43 :"ala ma kota"
+	}
+}
+//----------------------------------------------------------------------------------------------
+// Dane steruj¹ce mp3 playerami
+//----------------------------------------------------------------------------------------------
+
+// Odpowiedz kontrolera:
+
+"audioOdp" :{ 
+	//lista  parametrow
+	"TOR": 0,1  <- 0 - katalogi 001,002 , grzeczna wersja audio
+				   1 - katalogi 003,004 , nie grzeczna wersja audio
+    "TRYB" : 0..4 <- 0 - normalny, czyli: lewy(muzyka) , prawy(efekty). Dzwieki o ustalonej glosnosci
+				     1 - stereo_muzyka , oba glosniki graja muzyke, ignorowane efekty
+					 2 - stereo_efekty , oba glosniki graja efekty , ignorowana muzyka
+					 3 - wyciszanie ,podczas odgrywania utwor z lewego glosnika wyciszany o zadana ilosc 
+					 4 - palzowanie , utwor z lewego glosnika jest palzowany
+					
+
+	"PW" :0..15		<- poziom wyciszenia dla trybu 3
+	"LG" : 20   <- glosnosc lewej sekcji
+	"PG" : 10	<- glosnosc prawej sekcji
+	"LO" : 0..n	<- odtwarzany lewy 
+				   0 - zarezerwowane dla losowego utworu
+				   n > 0 - utwor z wybranego katalogu - zapetlony
+	//"PO" : 5	<- odtwarzany prawy		<-narazie zbedne dane
+	"L1" : ["Nazwa utworu 1","Nazwa utworu 2",...], (utwory grzeczne)
+	"L2" :  ["Nazwa utworu 1","Nazwa utworu 2",...], (utwory niecenzuralne)
+	//"P" : ["Nagranie 1","Nagranie 2",...] <- zbedne ale i tak sie wysle 
+}
+
+//{"TOR":1,"TRYB":3,"PW":10,"LG":20,"PG":17,"LO":2}
+{
+	"audio" :{
+		// lista mo¿liwych  parametrow
+		"TOR": 0..1
+		"TRYB": 0..4
+		"LG" : 0..30		<- Lewy glosnosc
+		"PG" : 0..30		<- Prawy glosnosc
+		"PW" : 0..15
+		"LO" : 0..n			<- Lewy nagranie (numer nagrania(muzyki) z wczesniej wskazanego katalogu)
+							0 - zarezerwowane dla losowego utworu
+		"PO" : 1..n			<- Numer efektu dzwiekowego
+		(olac ale pamietac)"RESET" : 1		<-WYWALIC - ustawia wartosci fabryczne,same problemy
+	}
+}
+//----------------------------------------------------------------------------------------------
+//Sterowanie kolami
+//----------------------------------------------------------------------------------------------
+Pamiêtamy , ¿e ze wzglêdu na ustawienie kó³ kieronek przyd prawego bedzie odwrotnoœci¹ drugiego.
+Zastanowiæ siê nad czasem impulsu , przetestowac zachowanie - czy ostatni podany stan jest podtrzymywany i
+podanie innej wartosci zmienia szybkosc, kierunek
+
+{
+	"ruch":{
+	"LP" : 1 - lewo przod
+	"P"  : 1 - przod
+	"PP" : 1 - prawo przod
+	"LT" : 1 - lewo tyl
+	"T"  : 1 - tyl
+	"PT" : 1 - prawo tyl
+	}
+}
+
+{"audio":{"TOR":1,"TRYB":3,"LG":20,"PG":10,"PW":3,"LO":2}}
+
+{"ruch":{"LP":1}}
+
+{"audio":{"PO":6}}  <- efekt prawy odtwarzanie
+
+cmdWelcome.addProperty("cmd","DANE_PROSZE")
