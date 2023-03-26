@@ -17,11 +17,19 @@
 
 //Uwaga! hardwareSerial lepiej inicjalizowac globalnie , technicznie moznaa by to zrobic w klasie YtesAudio
 //ale robi siê straszny bajzel w kodzie.
-HardwareSerial serialLewy(2);// - urzyj uart2 (technicznie piny 16,17); - do komunikacji z playerLewy
-HardwareSerial serialPrawy(1);// - mapuj uart1 (14,33); - do komunikacji z playerPrawy
 
-#define LEWE_KOLO_PIN 4		//
-#define PRAWE_KOLO_PIN 2	//dziala poprawnie
+//HardwareSerial serialLewy(2);  // - urzyj uart2. (technicznie piny 16,17); - do komunikacji z playerLewy
+//HardwareSerial serialPrawy(1); // - mapuj uart1 (14,33); - do komunikacji z playerPrawy
+
+
+SoftwareSerial serialLewy(16, 17); // RX, TX
+SoftwareSerial serialPrawy(14, 33); // RX, TX
+
+#define LEWE_KOLO_PIN 4		// domyslnie 4
+#define PRAWE_KOLO_PIN 2	// domyslni 2 - dziala poprawnie
+#define SERWO_RADAR_PIN 0	// serwo radau
+
+
 //Pin 0 - Srodkowy pomiêdzy 4 i 2  w przyszloœci dla  serwa radaru (4,0,2-sprzetowe piny PWM)
 //---------------Makra do debugowania-------------
 #define SERIAL_PD 					1	//wlacza i wylacza podleg³e makra

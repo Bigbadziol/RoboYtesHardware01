@@ -118,8 +118,8 @@ void setup() {
     while (!Serial) continue;
     delay(1000);
 
-    Serial.println("RoboYtesHardware 1.03");
-    Serial.println("Spam przycisk audio....delay");
+    Serial.println("RoboYtesHardware 1.04");
+    Serial.println("Zmiana sposobu pobierania danych , przez buforowanie.");
 
     
     bt.onAuthComplete(AuthCompleteCallback);
@@ -132,8 +132,6 @@ void setup() {
 
     naped = new YtesNaped();
     //naped->ruchPrawoPrzod();
-
-
 }
 
 //--------------------------------------------------------------------------------------
