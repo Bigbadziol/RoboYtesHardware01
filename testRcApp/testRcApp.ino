@@ -5,6 +5,11 @@ Serial.parseInt()
 Serial.parseFloat()
 Serial.readBytes()
 Serial.readBytesUntil()
+Serial.readString() - wirtualna dla bluetooth
+-Ogarn¹æ temat na zasadzie : znak specjalny koniec strumienia danych , dwa znaki specjalne , pocz¹tek i koniec
+ strumienia danych.
+
+Wiedza na przyszlosc , jesli potrzeba niezw³ocznej obs³ugi danych z Bt nie uzywac powyzszych.
 */
 #include "setup.h"
 #include "BdlBluetoothSerial.h" // uwaga dla zgodnosci z ledzikiem
@@ -81,6 +86,7 @@ void loop() {
 }
 
 /*
+* // Wersja z 2 znakami (rozpoczynaj¹cym i koncz¹cym strumien danych)
 * Przed setup :
 * const uint16_t numChars = 512;
 char receivedChars[numChars];
@@ -118,38 +124,3 @@ void recvWithStartEndMarkers() {
 }
 */
 
-
-
-
-/*
-// sporawnie dzia³aj¹cy dla pojedynczego znaku.
-void loop() {
-    if (bt.available()) {
-        char inChar = (char)bt.read();
-        Serial.printf("Przychadzacy bazowy : %c \n", inChar);
-        switch (inChar) {
-        case 'F':
-            Serial.println("mam : F-orward");
-            naped->ruchPrzod();
-            break;
-        case 'B':
-            Serial.println("mam : B-ack");
-            naped->ruchTyl();
-            break;
-        case 'L':
-            Serial.println("mam : L-eft");
-            naped->ruchLewoPrzod();
-            break;
-        case 'R':
-            Serial.println("mam : R-ight");
-            naped->ruchPrawoPrzod();
-            break;
-        default:
-            break;
-        }
-    }
-    naped->zatrzymaj();
-}
-
-
-*/

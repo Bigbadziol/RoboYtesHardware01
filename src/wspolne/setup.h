@@ -6,6 +6,8 @@
 #include "arduino.h"
 #include "SoftwareSerial.h"      // EspSoftwareSerial by Dirk Kaar, Peter Lerup Version 6.17.1
 #include <HardwareSerial.h>
+#include "Wire.h"
+#include <MPU6050_light.h>
 #include <ArduinoJson.h>
 
 #define JSON_INCOMMING_BUFFER	1024	//Maksymalny rozmiar odpowiedzi od apki
@@ -15,26 +17,51 @@
 #define SERIAL1_PRAWY_RX 14
 #define SERIAL1_PRAWY_TX 33
 
-//Uwaga! hardwareSerial lepiej inicjalizowac globalnie , technicznie moznaa by to zrobic w klasie YtesAudio
+//Uwaga! hardwareSerial lepiej inicjalizowac globalnie , technicznie mozna by to zrobic w klasie YtesAudio
 //ale robi siê straszny bajzel w kodzie.
-HardwareSerial serialLewy(2);// - urzyj uart2 (technicznie piny 16,17); - do komunikacji z playerLewy
-HardwareSerial serialPrawy(1);// - mapuj uart1 (14,33); - do komunikacji z playerPrawy
 
-#define LEWE_KOLO_PIN 4		//
-#define PRAWE_KOLO_PIN 2	//dziala poprawnie
+#define UZYJ_HARDWARE	0	// takich typów portow UART u¿ywaæ do komunikacji z playerami mp3
+
+#if UZYJ_HARDWARE == 1
+HardwareSerial serialLewy(2);  // - urzyj uart2. (technicznie piny 16,17); - do komunikacji z playerLewy
+HardwareSerial serialPrawy(1); // - mapuj uart1 (14,33); - do komunikacji z playerPrawy
+#else 
+SoftwareSerial serialLewy(16, 17); // RX, TX
+SoftwareSerial serialPrawy(14, 33); // RX, TX
+#endif // UZYJ_HARDWARE == 1
+
+#define LEWE_KOLO_PIN 4		// domyslnie 4
+#define PRAWE_KOLO_PIN 2	// domyslni 2 - dziala poprawnie
+#define SERWO_RADAR_PIN 0	// serwo radau
+
+MPU6050 mpu(Wire);
+
+#define HCSR_TRIG_PIN 5
+#define HCSR_ECHO_PIN 18
+
+#define LED_PIN 13
+
 //Pin 0 - Srodkowy pomiêdzy 4 i 2  w przyszloœci dla  serwa radaru (4,0,2-sprzetowe piny PWM)
 //---------------Makra do debugowania-------------
-#define SERIAL_PD 					1	//wlacza i wylacza podleg³e makra
-#define SERIAL_AUDIO_INFO			1	//co sie dzieje ww YtesAudio
-#define SERIAL_AUDIO_ERROR			1	//tylko bledy z YtesAudio
-#define SERIAL_NAPED_INFO			1	//co sie dzieje w YtesNaped
-#define SERIAL_NAPED_ERROR			1	//tylko bledy z YtesNaped
+#define SERIAL_PD 					1	// wlacza i wylacza podleg³e makra
+#define SERIAL_AUDIO_INFO			1	// co sie dzieje ww YtesAudio
+#define SERIAL_AUDIO_ERROR			1	// tylko bledy z YtesAudio
+#define SERIAL_NAPED_INFO			1	// co sie dzieje w YtesNaped
+#define SERIAL_NAPED_ERROR			1	// tylko bledy z YtesNaped
+#define SERIAL_ZYR_INFO				1	// co siê dzieje w YtesZyroskop
+#define SERIAL_ZYR_ERROR			1	// wypisuj tylko b³êdy z YtesZyroskop
+#define SERIAL_RADAR_INFO			1	// co siê dzieje w klasie YtesRadar
+#define SEROAL_RADAR_ERROR			1	// wypisuj tylko b³êdy z YtesRadar
 
 #if SERIAL_PD == 0
 #define SERIAL_AUDIO_INFO	0
 #define SERIAL_AUDIO_ERROR	0
 #define SERIAL_NAPED_INFO	0
 #define SERIAL_NAPED_ERROR	0
+#define SERIAL_ZYR_INFO		0
+#define SERIAL_ZYR_ERROR	0
+#define SERIAL_RADAR_INFO	0
+#define SERIAL_RADAR_ERROR	0
 #endif
 
 // PRINT ------------------------------------------
@@ -113,6 +140,54 @@ HardwareSerial serialPrawy(1);// - mapuj uart1 (14,33); - do komunikacji z playe
 #define NAPED_ERROR(s)
 #define NAPED_ERROR_S(s,s1)
 #define NAPED_ERROR_V(s,v)
+#endif
+
+// ZYROSKOP -------------------------------------------
+#if SERIAL_ZYR_INFO == 1
+#define ZYR_INFO(s) PRINT_MESSAGE(s)
+#define ZYR_INFO_S(s,s1) PRINT_MESSAGE_S(s,s1)
+#define ZYR_INFO_V(s,v) PRINT_MESSAGE_V(s,v)
+#define ZYR_INFO_VV(s,v1,v2) PRINT_MESSAGE_VV(s,v1,v2)
+
+#else
+#define ZYR_INFO(s)    
+#define ZYR_INFO_S(s,s1)   
+#define ZYR_INFO_V(s,v)   
+#define ZYR_INFO_VV(s,v1,v2)
+#endif
+
+#if SERIAL_ZYR_ERROR == 1
+#define ZYR_ERROR(s) PRINT_MESSAGE(s)
+#define ZYR_ERROR_S(s,s1) PRINT_MESSAGE_S(s,s1)
+#define ZYR_ERROR_V(s,v) PRINT_MESSAGE_V(s,v)
+#else
+#define ZYR_ERROR(s)
+#define ZYR_ERROR_S(s,s1)
+#define ZYR_ERROR_V(s,v)
+#endif
+
+// RADAR -------------------------------------------
+#if SERIAL_RADAR_INFO == 1
+#define RADAR_INFO(s) PRINT_MESSAGE(s)
+#define RADAR_INFO_S(s,s1) PRINT_MESSAGE_S(s,s1)
+#define RADAR_INFO_V(s,v) PRINT_MESSAGE_V(s,v)
+#define RADAR_INFO_VV(s,v1,v2) PRINT_MESSAGE_VV(s,v1,v2)
+
+#else
+#define RADAR_INFO(s)    
+#define RADAR_INFO_S(s,s1)   
+#define RADAR_INFO_V(s,v)   
+#define RADAR_INFO_VV(s,v1,v2)
+#endif
+
+#if SERIAL_RADAR_ERROR == 1
+#define RADAR_ERROR(s) PRINT_MESSAGE(s)
+#define RADAR_ERROR_S(s,s1) PRINT_MESSAGE_S(s,s1)
+#define RADAR_ERROR_V(s,v) PRINT_MESSAGE_V(s,v)
+#else
+#define RADAR_ERROR(s)
+#define RADAR_ERROR_S(s,s1)
+#define RADAR_ERROR_V(s,v)
 #endif
 
 

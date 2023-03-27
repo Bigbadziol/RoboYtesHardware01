@@ -1,3 +1,5 @@
+//TODO : Zmienic w apce : informacja zwrotna(ustawienia) LO = PO teraz
+
 //----------------------------------------------------------------------------------------------
 // Ogolne
 //----------------------------------------------------------------------------------------------
@@ -30,17 +32,16 @@ Przykladowo : po restarcie mp3Playera na nowo trzeba ustawic glosnosc
 					 3 - wyciszanie ,podczas odgrywania utwor z lewego glosnika wyciszany o zadana ilosc 
 					 4 - palzowanie , utwor z lewego glosnika jest palzowany
 					
-
-	"PW" :0..15		<- poziom wyciszenia dla trybu 3
 	"LG" : 20   <- glosnosc lewej sekcji
 	"PG" : 10	<- glosnosc prawej sekcji
-	"LO" : 0..n	<- odtwarzany lewy 
-				   0 - zarezerwowane dla losowego utworu
-				   n > 0 - utwor z wybranego katalogu - zapetlony
-	//"PO" : 5	<- odtwarzany prawy		<-narazie zbedne dane
+	"PW" :0..15		<- poziom wyciszenia dla trybu 3
+
+	"PO" : 0..n	<- odtwarzany lewy (muzyka)
+				   0 - zarezerwowane dla : kolejny z listy w folderze
+				   n > 0 - utwor z wybranego katalogu - zapetlony (chwilowo nie bo  pierdzielone indexy ns SD)	
+    "LO"   <- efekty (lewy odtwarzanie), tego nie wysylamy bo z natury efekt ma ok 2-3 sek.
 	"L1" : ["Nazwa utworu 1","Nazwa utworu 2",...], (utwory grzeczne)
 	"L2" :  ["Nazwa utworu 1","Nazwa utworu 2",...], (utwory niecenzuralne)
-	//"P" : ["Nagranie 1","Nagranie 2",...] <- zbedne ale i tak sie wysle 
 }
 
 //{"TOR":1,"TRYB":3,"PW":10,"LG":20,"PG":17,"LO":2}
@@ -52,9 +53,9 @@ Przykladowo : po restarcie mp3Playera na nowo trzeba ustawic glosnosc
 		"LG" : 0..30		<- Lewy glosnosc
 		"PG" : 0..30		<- Prawy glosnosc
 		"PW" : 0..15
-		"LO" : 0..n			<- Lewy nagranie (numer nagrania(muzyki) z wczesniej wskazanego katalogu)
-							0 - zarezerwowane dla losowego utworu
-		"PO" : 1..n			<- Numer efektu dzwiekowego
+		"LO" : 1..n			<- Numer efektu dzwiekowego (z wskazanego katalogu przez TOR)						
+		"PO" : 0..n			<- Prawy odtwarzanie (numer nagrania(muzyki) z wczesniej wskazanego katalogu)
+							   0 - zarezerwowane dla kolejnego utworu z listy
 		(olac ale pamietac)"RESET" : 1		<-WYWALIC - ustawia wartosci fabryczne,same problemy
 	}
 }
