@@ -20,14 +20,20 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)BdlBluetoothSerial.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)setup.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)YtesAudio.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesLed.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)YtesNaped.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesRadar.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)YtesServo.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesZyroskop.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)BdlBluetoothSerial.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)setup.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesAudio.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesLed.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesNaped.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesRadar.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesServo.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesZyroskop.h" />
   </ItemGroup>
 </Project>
