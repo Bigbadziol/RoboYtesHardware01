@@ -74,7 +74,6 @@
   <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared">
     <Import Project="..\src\wspolne\wspolne.vcxitems" Label="Shared" />
-    <Import Project="..\Libraries\EspSoftwareSerial\6.17.1\EspSoftwareSerial\EspSoftwareSerial-6.17.1.vcxitems" Label="Shared" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">

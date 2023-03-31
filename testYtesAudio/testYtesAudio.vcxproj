@@ -73,11 +73,7 @@
   </PropertyGroup>
   <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared">
-    <Import Project="..\Libraries\EspSoftwareSerial\6.17.1\EspSoftwareSerial\EspSoftwareSerial-6.17.1.vcxitems" Label="Shared" />
     <Import Project="..\src\wspolne\wspolne.vcxitems" Label="Shared" />
-    <Import Project="..\..\..\..\Documents\Arduino\libraries\Adafruit_MPU6050\Adafruit_MPU6050-2.2.4.vcxitems" Label="Shared" />
-    <Import Project="..\..\..\..\Documents\Arduino\libraries\Adafruit_Unified_Sensor\Adafruit_Unified_Sensor-1.1.9.vcxitems" Label="Shared" />
-    <Import Project="..\..\..\..\Documents\Arduino\libraries\Adafruit_SSD1306\Adafruit_SSD1306-2.5.7.vcxitems" Label="Shared" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">

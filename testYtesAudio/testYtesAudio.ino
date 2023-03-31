@@ -1,41 +1,42 @@
-#include <splash.h>
-#include <Adafruit_SSD1306.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_MPU6050.h>
 #include "setup.h"
 #include "YtesAudio.h"
+#include "YtesZyroskop.h"
 #include <ArduinoJson.h>
 
-//PRAWY -DFPLAYER MINI
-// LEWY - MP3-TF-16P
+//TODO: porzetestowac dla pewnosci w wariancie HardwareSerial
 
-//dobry chip : YX5200 ??
-//PRZETESTOWAC ZMIANE Hardware na serialPort
-// 
+//1)
 //https://www.youtube.com/watch?v=kq2RLz65_w0// 
 //REZYSTOR?!?! RX-GND pulldown 100k-1M (przy zasilaniu 3.3V) , goœæ u¿ywa HardwareSerial (1), potem b egin, mamy to samo
 //gdzie indziej 1K
 
+//2)
 //Posiadane scalaki :
 // 1) DFROBOTILISP3 lub DFROBOT|LISP3 wzmacniacz YX8002D -> https://www.amazon.ca/DFPlayer-A-Mini-MP3-Player/dp/B089D5NLW1
 // 2) MH2024K-16SS / 8002A-XJS
 // 3)
 // 4)  GD3200D
+// Dobre chipy -> YX5200 
 //moj problem:
 //https://www.youtube.com/watch?v=LJXM1KGWEKg
 
+//3)
 //BARDZO LADNIE OPISANE : 
 //https://garrysblog.com/2022/06/12/mp3-dfplayer-notes-clones-noise-speakers-wrong-file-plays-and-no-library/
+
+//4) Dla Filipa
 /*
 * Pamiêtaæ nale¿y , ¿e nie mamy faktycznie wplywu na kolejnoœæ interpretacji kolejnoœci parametrów
 * W zale¿noœci od biblioteki (android/esp) sk³adowa przykladowo bedzie wygenerowana w innym miejscu.
 * Istotna jest wartoœæ informacji nie kolejnoœæ umiejscowienia w obiekcie.
 */
 
+//5)
 //Konwerter z ktorego kozystalismy
 //https://www.konwerter.net/results/
 
 YtesAudio* audio;
+YtesZyroskop *zyroskop;
 
 String testUstawGlosnosc() {
     String ret = "";
@@ -46,19 +47,12 @@ String testUstawGlosnosc() {
     return ret;
 }
 
-
-
-bool efekt1 = false;
-bool efekt2 = false;
-bool efekt3 = false;
-bool efekt4 = false;
-
 static unsigned long timerLewy = millis();
 static unsigned long timerPrawy = millis();
-unsigned long msStart = millis();
-unsigned long msTeraz = millis();
+static unsigned long msTeraz = millis();
 
 
+//-------------------------------------------------------------------------------------------
 void parsowaniePolecenia() {
     // obsluga danych przychodzacych
     Serial.println("Dane testowe wchodzace : ");
@@ -72,17 +66,35 @@ void parsowaniePolecenia() {
     else {
         Serial.println("Blad serializacji polecenia.");
     };
-}
-
+};
+//-------------------------------------------------------------------------------------------
+void losowyEfektDzwiekowy(byte iloscDzwiekow) {
+    int los = random(1, iloscDzwiekow + 1);    
+    audio->grajEfekt(los);
+};
+//-------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------
 void setup() {
+    Wire.begin();               //Potrzebne zyroskopowi
+    randomSeed(analogRead(A0)); //Potrzebne zyroskopowi
+
     Serial.begin(115200);
-    while (!Serial) continue;
-    delay(200);
+    while (!Serial) delay(100);
+
+#if UZYJ_HARDWARE == 1
+    PD_INFO("Uwaga, komunikacja UART - HardwareSerial");
+    serialLewy.begin(9600, SERIAL_8N1, SERIAL2_LEWY_RX, SERIAL2_LEWY_TX);
+    serialPrawy.begin(9600, SERIAL_8N1, SERIAL1_PRAWY_RX, SERIAL1_PRAWY_TX);
+#else
+    PD_INFO("Uwaga, komunikacja UART - SoftwareSerial");
     serialLewy.begin(9600);
     serialPrawy.begin(9600);
-
-    Serial.println("Test klasy YtesAudio : 1.03");
+#endif 
+    AUDIO_INFO("Test klasy YtesAudio : 1.08");
+    zyroskop = new YtesZyroskop(&mpu, 100); 
     audio = new YtesAudio(&serialLewy, &serialPrawy, 350);
+    audio->dodajZyroskop(zyroskop);
+    
     // zainicjalizowane ustawienia
     String odpowiedz = audio->odpowiedz();
     Serial.println("Odpowiedz ustawienia bazowe :");
@@ -94,59 +106,50 @@ void setup() {
 
     //audio->graj(LEWY, MUZYKA, 2);
     //testy :  graj muzyke 2 , obliczony index 10 , slysze bodies
-    audio->grajMuzyke(2);
+    
+    //audio->grajMuzyke(2);
+    //audio->grajEfekt(8);
 
-    msStart = millis();
+
+#if UZYJ_HARDWARE == 0      //Tylko dla SoftwareSerial
+    serialLewy.listen();
+#endif
+    
 };
-
-
+//-------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------
 void loop() {
     msTeraz = millis();
 
-    if (msTeraz > (msStart + 5000)) {
-        if (efekt1 == false) {
-            efekt1 = true;
-            audio->grajEfekt(4);
-        };
-    };
-/*
-    if (msTeraz > (msStart + 10000)) {
-        if (efekt4 == false) {
-            efekt4 = true;
-            audio->playerPrawy.volume(5);
-        }
-    }
-*/
-    if (msTeraz > (msStart + 15000)){
-        if (efekt2 == false) {
-            efekt2 = true;
-            audio->grajEfekt(3);
-        };
-    };
-
-    if (msTeraz > (msStart + 25000)) {
-        if (efekt3 == false) {
-            efekt3 = true;
-            audio->grajEfekt(1);
-        };
-    };
-
-
-/*
-      if (millis() - timerPrawy > 5000) {
+    //Losowe efekty dzwiekowe , dla roznych trybow ustawienia obiektu audio
+    if (millis() - timerPrawy > 8000) {
         timerPrawy = millis();
-        Serial.println("PRAWY : Nastepne nagranie.");
-        audio->playerPrawy.playNext();
+ //      losowyEfektDzwiekowy(5);
+    };
+
+/*
+      //------------------------------------------------------------------------------------------------
+      //Kolejne utwory z karty SD
+      //Uwaga mp3Player - indexuje nagrania w swoj unikalny pojebany sposob, nie zawsze s¹ to indexy narasataj¹co
+      //w rozumieniu : kat 01/5 utworow to w kat 02/ zaczynamy od 6. Aby bylo zabawniej w zale¿noœci od typu scalaka
+      //(mamy w ofercie bodaj 7 roznych) indexowanie moze wygladac zupelnie inaczej. Sport dla masochistow.
+      //------------------------------------------------------------------------------------------------
+      if (millis() - timerPrawy > 5000) {
+          timerPrawy = millis();
+          bool gram = audio->playerPrawy.isPlaying();
+          Serial.printf(" PRAWY : Aktualnie odtwarzam :%d \n",gram);
+          Serial.println("PRAWY : Nastepne nagranie.");
+          audio->playerPrawy.playNext();
       }
 
       if (millis() - timerLewy > 5000) {
           timerLewy = millis();
           bool gram = audio->playerLewy.isPlaying();
-          Serial.print("odtwarzam    : ");
-          Serial.println(gram);
+          Serial.printf(" LEWY : Aktualnie odtwarzam :%d \n",gram);          
           Serial.println("LEWY : Nastepne nagranie.");
           audio->playerLewy.playNext();
       }
 */
+    zyroskop->uaktualnijOdczyty();
     audio->audioHandler();
 };

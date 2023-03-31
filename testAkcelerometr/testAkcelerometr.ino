@@ -1,4 +1,4 @@
-// Basic demo for accelerometer readings from Adafruit MPU6050
+﻿// Basic demo for accelerometer readings from Adafruit MPU6050
 
 //TO
 // ESP32 Guide: https://RandomNerdTutorials.com/esp32-mpu-6050-accelerometer-gyroscope-arduino/
@@ -12,152 +12,67 @@
 //0x68
 //0x72
 //if (!mpu.begin(YOUR_I2C_ADDRESS)) {}
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
-#include <Wire.h>
+/* Get all possible data from MPU6050
+ * Accelerometer values are given as multiple of the gravity [1g = 9.81 m/s²]
+ * Gyro values are given in deg/s
+ * Angles are given in degrees
+ * Note that X and Y are tilt angles and not pitch/roll.
+ *
+ * License: MIT
+ */
+#include "Wire.h"
+#include <MPU6050_light.h>
 
-Adafruit_MPU6050 mpu;
+MPU6050 mpu(Wire);
 
-void setup(void) {
+long timer = 0;
+
+void kalibracjaUstawienia() {
+    Serial.printf("AKCE. OFSETY : x:%.2f , y:%.2f , z:%.2F \n", mpu.getAccXoffset(), mpu.getAccYoffset(), mpu.getAccZoffset());
+    Serial.printf("ZYRO. OFSETY : x:%.2f , y:%.2f , z:%.2F \n", mpu.getGyroXoffset(), mpu.getGyroYoffset(), mpu.getGyroZoffset());
+    Serial.printf("AKCELEROMETR FILTR : %f \n", mpu.getFilterAccCoef());
+    Serial.printf("ZYROSKOP FILTR : %f \n", mpu.getFilterGyroCoef());
+};
+
+void setup() {
     Serial.begin(115200);
-    while (!Serial)
-        delay(10); // will pause Zero, Leonardo, etc until serial console opens
+    Wire.begin(); //Pamietac!! do glownego
 
-    Serial.println("Adafruit MPU6050 test!");
+    byte status = mpu.begin();
+    Serial.print(F("MPU6050 status: "));
+    Serial.println(status);
+    while (status != 0) {} // stop everything if could not connect to MPU6050
 
-    // Try to initialize!
-    if (!mpu.begin(0x68)) {
-        Serial.println("Failed to find MPU6050 chip");
-        while (1) {
-            delay(10);
-        }
-    }
-    Serial.println("MPU6050 Found!");
+    Serial.println(F("Przed kalibracja : "));
+    kalibracjaUstawienia();
+    delay(1000);
+    mpu.calcOffsets(true, true); // gyro and accelero
+    Serial.println("\n\n");
+    kalibracjaUstawienia();
 
-    mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-    Serial.print("Accelerometer range set to: ");
-    switch (mpu.getAccelerometerRange()) {
-    case MPU6050_RANGE_2_G:
-        Serial.println("+-2G");
-        break;
-    case MPU6050_RANGE_4_G:
-        Serial.println("+-4G");
-        break;
-    case MPU6050_RANGE_8_G:
-        Serial.println("+-8G");
-        break;
-    case MPU6050_RANGE_16_G:
-        Serial.println("+-16G");
-        break;
-    }
-    mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-    Serial.print("Gyro range set to: ");
-    switch (mpu.getGyroRange()) {
-    case MPU6050_RANGE_250_DEG:
-        Serial.println("+- 250 deg/s");
-        break;
-    case MPU6050_RANGE_500_DEG:
-        Serial.println("+- 500 deg/s");
-        break;
-    case MPU6050_RANGE_1000_DEG:
-        Serial.println("+- 1000 deg/s");
-        break;
-    case MPU6050_RANGE_2000_DEG:
-        Serial.println("+- 2000 deg/s");
-        break;
-    }
-
-    mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
-    Serial.print("Filter bandwidth set to: ");
-    switch (mpu.getFilterBandwidth()) {
-    case MPU6050_BAND_260_HZ:
-        Serial.println("260 Hz");
-        break;
-    case MPU6050_BAND_184_HZ:
-        Serial.println("184 Hz");
-        break;
-    case MPU6050_BAND_94_HZ:
-        Serial.println("94 Hz");
-        break;
-    case MPU6050_BAND_44_HZ:
-        Serial.println("44 Hz");
-        break;
-    case MPU6050_BAND_21_HZ:
-        Serial.println("21 Hz");
-        break;
-    case MPU6050_BAND_10_HZ:
-        Serial.println("10 Hz");
-        break;
-    case MPU6050_BAND_5_HZ:
-        Serial.println("5 Hz");
-        break;
-    }
-
-    Serial.println("");
-    delay(100);
 }
 
 void loop() {
-    /* Get new sensor events with the readings */
-    sensors_event_t a, g, temp;
-    mpu.getEvent(&a, &g, &temp);
+    mpu.update();
 
-    /* Print out the values */
-    Serial.print("Acceleration X: ");
-    Serial.print(a.acceleration.x);
-    Serial.print(", Y: ");
-    Serial.print(a.acceleration.y);
-    Serial.print(", Z: ");
-    Serial.print(a.acceleration.z);
-    Serial.println(" m/s^2");
+    if (millis() - timer > 1000) { // print data every second
+        Serial.print(F("TEMPERATURE: ")); Serial.println(mpu.getTemp());
+        Serial.print(F("ACCELERO  X: ")); Serial.print(mpu.getAccX());
+        Serial.print("\tY: "); Serial.print(mpu.getAccY());
+        Serial.print("\tZ: "); Serial.println(mpu.getAccZ());
 
-    Serial.print("Rotation X: ");
-    Serial.print(g.gyro.x);
-    Serial.print(", Y: ");
-    Serial.print(g.gyro.y);
-    Serial.print(", Z: ");
-    Serial.print(g.gyro.z);
-    Serial.println(" rad/s");
+        Serial.print(F("GYRO      X: ")); Serial.print(mpu.getGyroX());
+        Serial.print("\tY: "); Serial.print(mpu.getGyroY());
+        Serial.print("\tZ: "); Serial.println(mpu.getGyroZ());
 
-    Serial.print("Temperature: ");
-    Serial.print(temp.temperature);
-    Serial.println(" degC");
+        Serial.print(F("ACC ANGLE X: ")); Serial.print(mpu.getAccAngleX());
+        Serial.print("\tY: "); Serial.println(mpu.getAccAngleY());
 
-    Serial.println("");
-    delay(500);
-}
-
-/*
-* void loop() {
-  byte error, address;
-  int nDevices;
-  Serial.println("Scanning...");
-  nDevices = 0;
-  for(address = 1; address < 127; address++ ) {
-    Wire.beginTransmission(address);
-    error = Wire.endTransmission();
-    if (error == 0) {
-      Serial.print("I2C device found at address 0x");
-      if (address<16) {
-        Serial.print("0");
-      }
-      Serial.println(address,HEX);
-      nDevices++;
+        Serial.print(F("ANGLE     X: ")); Serial.print(mpu.getAngleX());
+        Serial.print("\tY: "); Serial.print(mpu.getAngleY());
+        Serial.print("\tZ: "); Serial.println(mpu.getAngleZ());
+        Serial.println(F("=====================================================\n"));
+        timer = millis();
     }
-    else if (error==4) {
-      Serial.print("Unknow error at address 0x");
-      if (address<16) {
-        Serial.print("0");
-      }
-      Serial.println(address,HEX);
-    }    
-  }
-  if (nDevices == 0) {
-    Serial.println("No I2C devices found\n");
-  }
-  else {
-    Serial.println("done\n");
-  }
-  delay(5000);          
+
 }
-*/

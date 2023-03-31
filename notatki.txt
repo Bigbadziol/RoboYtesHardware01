@@ -18,3 +18,5 @@ Z : https://forbot.pl/forum/topic/10561-arduino-sterowanie-serwem-360feetech-fs9
 Wysy³asz mu sygna³ PWM o czêstotliwoœci 50Hz z zadan¹ d³ugoœci¹ impulsu. Przy impulsie 1500us serwo stoi w miejscu,
 przy mniejszym obraca siê w jedn¹ stronê, przy wiêkszym w drug¹, tym szybciej im bardziej impuls ró¿ni siê od tych œrodkowych 1500us.
 
+//Pod przednie serwo:
+- zakres impulsow 500,2400 (zerknaæ w klasê);
