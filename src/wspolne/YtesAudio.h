@@ -33,6 +33,7 @@ typedef struct efektDzwiekowy {
 
 
 //player prawy traktowany jest jako nadrzedny, w trybie normalnym gra muzyke
+// lewy - efekty efekty
 //normalny - osobne sterowanie playerem lewym , i playerem prawym
 //stereo_muzyka - player prawy odgrywa z tego samego katalogu co nadrzedny(lewy) tylko muzyka, efekty sa ignorowane
 //stereo_efekty - player prawy odgrywa z tego samego katalogu co nadrzedny(lewy) tylko efekty, muzyka jest ignorowana

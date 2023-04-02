@@ -90,6 +90,7 @@ class YtesZyroskop {
 		void wypiszStan(bool ignorujStanBrak = true);
 		STAN_ZYROSKOP pobierzStan();
 		bool pobierzStatus(); //czy udalo sie zainicjalizowac MPU6050
+		void wypiszKluczowePomiary();
 		//Debug testy
 		void wypiszRuchWstrzas();
 		float losowePrzyspieszenie(float progDol, float prog);
@@ -427,14 +428,23 @@ void YtesZyroskop::wypiszStan(bool ignorujStanBrak) {
 */
 STAN_ZYROSKOP YtesZyroskop::pobierzStan() {
 	return mojStan;
-}
+};
+
 /**
 * @brief Zwróæ informacjê czy uda³o siê poprawnie zainicjowaæ MPU6050
 * False oznacza brak mo¿liwoœci ko¿ystania z klasy
 */
 bool YtesZyroskop::pobierzStatus() {
 	return status;
-}
+};
+/**
+* @brief Wypisz najwazniejsze pomiary , odchylenie w osiach X,Y wyrazone w osiach. Przyspieszenie w osi Z.
+*/
+void YtesZyroskop::wypiszKluczowePomiary() {
+	Serial.printf("Zyroskop  x:%.2f , y:%.2f , z:%.3f \n", myMpu->getAccAngleX(), myMpu->getAccAngleY() , myMpu->getAccZ());
+
+};
+
 //---------------------------TESTY DEBUGI I INNE PIERDY----------------------------------
 /**
 * @brief Metoda testowa. Generuje wartoœci zblizone do odczytów akcelerometru.

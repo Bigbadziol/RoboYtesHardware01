@@ -22,5 +22,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesZyroskop.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesRadar.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesLed.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesWSled.h" />
   </ItemGroup>
 </Project>

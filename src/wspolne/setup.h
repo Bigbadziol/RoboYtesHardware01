@@ -12,10 +12,10 @@
 
 #define JSON_INCOMMING_BUFFER	1024	//Maksymalny rozmiar odpowiedzi od apki
 
+#define SERIAL1_PRAWY_RX 33	//34	//Zmiana z blednego 14!! PODLUTOWAC SIE POD 14(RX) 33(TX)
+#define SERIAL1_PRAWY_TX 34 //33
 #define SERIAL2_LEWY_RX 16
 #define SERIAL2_LEWY_TX 17
-#define SERIAL1_PRAWY_RX 14
-#define SERIAL1_PRAWY_TX 33
 
 //Uwaga! hardwareSerial lepiej inicjalizowac globalnie , technicznie mozna by to zrobic w klasie YtesAudio
 //ale robi siê straszny bajzel w kodzie.
@@ -26,20 +26,24 @@
 HardwareSerial serialLewy(2);  // - urzyj uart2. (technicznie piny 16,17); - do komunikacji z playerLewy
 HardwareSerial serialPrawy(1); // - mapuj uart1 (14,33); - do komunikacji z playerPrawy
 #else 
-SoftwareSerial serialLewy(16, 17); // RX, TX
-SoftwareSerial serialPrawy(14, 33); // RX, TX
+SoftwareSerial serialLewy(SERIAL2_LEWY_RX, SERIAL2_LEWY_TX); // RX, TX
+SoftwareSerial serialPrawy(SERIAL1_PRAWY_RX, SERIAL1_PRAWY_TX); // RX, TX
 #endif // UZYJ_HARDWARE == 1
 
-#define LEWE_KOLO_PIN 4		// domyslnie 4
-#define PRAWE_KOLO_PIN 2	// domyslni 2 - dziala poprawnie
-#define SERWO_RADAR_PIN 0	// serwo radau
+#define LEWE_KOLO_PIN 0		// domyslnie 4
+#define PRAWE_KOLO_PIN 4	// domyslni 2 - dziala poprawnie
+#define SERWO_RADAR_PIN 2	// serwo radau
 
 MPU6050 mpu(Wire);
 
 #define HCSR_TRIG_PIN 5
 #define HCSR_ECHO_PIN 18
 
-#define LED_PIN 13
+#define LED_PIN 13		//Uwaga, dla wersji z pojedyncza zwykla dioda led oraz dla paska Ledow ws2812B
+#define COLOR_ORDER GRB                   //pozadek kolorow
+#define LED_TYPE WS2812B                  //typ leda
+#define NUM_LEDS 13                       // ilosc
+#define BRIGHTNESS 128					  // polowa mocy	 
 
 //Pin 0 - Srodkowy pomiêdzy 4 i 2  w przyszloœci dla  serwa radaru (4,0,2-sprzetowe piny PWM)
 //---------------Makra do debugowania-------------

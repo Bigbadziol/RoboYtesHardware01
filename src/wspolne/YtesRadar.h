@@ -7,7 +7,7 @@
 
 class YtesRadar {
 private:
-	//Servo serwo;
+	Servo serwoRadar;
 
 	int pinTrigger;
 	int pinEcho;
@@ -15,14 +15,13 @@ private:
 	int zasiegMax = -1;
 	float _ostatniPomiar = 10.0f; //minimalny  zakres to : 2..400  cm
 	long msCzasPomiaru = 200;
-	unsigned long msNastepnyPomiar = millis()+msCzasPomiaru;
+	unsigned long msNastepnyPomiar = millis() + msCzasPomiaru;
 	unsigned int echoMicrosekundy();
 public:
-	YtesRadar(int trigger, int echo, int min, int max);
+	YtesRadar(int triggerPin, int echoPin, int min, int max,int RadarPin);
 	~YtesRadar();
-	//serwo
-	void ustaw90();
-	void testObrot();
+	//serwo	
+	void ustawRadar(int kat); // przyjmowane 
 	//czujnik 
 	int dystansMm();
 	float dystansCm();
@@ -33,14 +32,14 @@ public:
 * @brief Zainicjuj serwo
 * 
 */
-YtesRadar::YtesRadar(int trigger, int echo, int min, int max) {
-	pinMode(trigger, OUTPUT);
-	pinMode(echo, INPUT);
-	pinTrigger = trigger;
-	pinEcho = echo;
+YtesRadar::YtesRadar(int triggerPin, int echoPin, int min, int max, int radarPin) {
+	pinMode(triggerPin, OUTPUT);
+	pinMode(echoPin, INPUT);
+	pinTrigger = triggerPin;
+	pinEcho = echoPin;
 	zasiegMin = min;
 	zasiegMax = max;
-	//serwo.attach(SERWO_RADAR_PIN, Servo::CHANNEL_NOT_ATTACHED, 0, 180, 500, 2400);
+	serwoRadar.attach(radarPin, Servo::CHANNEL_NOT_ATTACHED, 0, 180, 500, 2400);	
 	RADAR_INFO("[radar] serwo zalaczone");	
 };
 /**
@@ -53,13 +52,20 @@ YtesRadar::~YtesRadar() {
 
 //---------------------------------PUBLICZNE -------------------------------------
 /**
-* @brief Ustaw radar w pocz¹tkowej pozycji.
+* @brief Utaw radar do okreœlonej pozycji . Domuszczalny zakres to 0-180 st.
+* Przekroczenie zakresu ustawi radar w pozycji 90 st. (na wprost);
 */
-void YtesRadar::ustaw90() {	
-	//serwo.write(90);
-	RADAR_INFO("[radar] pozycja pocz¹tkowa ustawiona.");
+void YtesRadar::ustawRadar(int kat) {
+	int _kat = kat;
+	if (_kat < 0) kat = 90;
+	if (_kat > 180) kat = 90;
+	_kat = 180 - _kat;
+	serwoRadar.write(_kat);
 };
 
+/**
+* 
+*/
 unsigned int YtesRadar::echoMicrosekundy() {
 	digitalWrite(pinTrigger, LOW);
 	delayMicroseconds(5);
@@ -87,20 +93,6 @@ float YtesRadar::dystansCm() {
 };
 
 //---------------------------------DEBUG------------------------------------------
-/**
-* Wykonaj pe³ny ruch w zakresie 0-180 st. , nastepnie 180-0 st
-*/
-void YtesRadar::testObrot() {
-	RADAR_INFO("[radar] test obrotu 0-180 i powrot do 0.");
-	for (int i = 0; i <= 180; i++) {
-		//		serwo.write(i);
-		delay(20);
-	};
-	for (int i = 180; i >= 0; i++) {
-		//		serwo.write(i);
-	};
-};
-
 /**
 * @brief Pobierz odleg³oœæ do przeszkody domyslnie w centymetrach
 */

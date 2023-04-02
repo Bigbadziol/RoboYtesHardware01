@@ -34,6 +34,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesNaped.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesRadar.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesServo.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesWSled.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesZyroskop.h" />
   </ItemGroup>
 </Project>

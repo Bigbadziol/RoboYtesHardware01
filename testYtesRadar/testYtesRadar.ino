@@ -9,7 +9,7 @@ void setup() {
     delay(100);
     Serial.println("test YtesRadar 1.00");
     RADAR_INFO("Zabawa z serwem i HC-SR04");
-    radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 4000);
+    radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 4000, SERWO_RADAR_PIN);
     //radar->ustaw90(); //nie dziala
     //radar->testObrot(); //nie dziala
 }

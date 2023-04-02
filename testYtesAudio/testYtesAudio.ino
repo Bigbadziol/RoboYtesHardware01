@@ -91,6 +91,7 @@ void setup() {
     serialPrawy.begin(9600);
 #endif 
     AUDIO_INFO("Test klasy YtesAudio : 1.08");
+    AUDIO_INFO("Problem prawy glosnik");
     zyroskop = new YtesZyroskop(&mpu, 100); 
     audio = new YtesAudio(&serialLewy, &serialPrawy, 350);
     audio->dodajZyroskop(zyroskop);
@@ -106,6 +107,9 @@ void setup() {
 
     //audio->graj(LEWY, MUZYKA, 2);
     //testy :  graj muzyke 2 , obliczony index 10 , slysze bodies
+    
+    //audio->graj(LEWY, MUZYKA, 2); //gra muze , gra dzwieki.
+    audio->graj(PRAWY, MUZYKA, 2);
     
     //audio->grajMuzyke(2);
     //audio->grajEfekt(8);
