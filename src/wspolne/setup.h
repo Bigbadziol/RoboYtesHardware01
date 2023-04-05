@@ -12,8 +12,8 @@
 
 #define JSON_INCOMMING_BUFFER	1024	//Maksymalny rozmiar odpowiedzi od apki
 
-#define SERIAL1_PRAWY_RX 33	//34	//Zmiana z blednego 14!! PODLUTOWAC SIE POD 14(RX) 33(TX)
-#define SERIAL1_PRAWY_TX 34 //33
+#define SERIAL1_PRAWY_RX 14	//34(blad)	//Zmiana z blednego 14!! PODLUTOWAC SIE POD 14(RX) 33(TX)
+#define SERIAL1_PRAWY_TX 33 //33(blad)
 #define SERIAL2_LEWY_RX 16
 #define SERIAL2_LEWY_TX 17
 
@@ -39,13 +39,13 @@ MPU6050 mpu(Wire);
 #define HCSR_TRIG_PIN 5
 #define HCSR_ECHO_PIN 18
 
-#define LED_PIN 13		//Uwaga, dla wersji z pojedyncza zwykla dioda led oraz dla paska Ledow ws2812B
-#define COLOR_ORDER GRB                   //pozadek kolorow
-#define LED_TYPE WS2812B                  //typ leda
-#define NUM_LEDS 13                       // ilosc
-#define BRIGHTNESS 128					  // polowa mocy	 
+#define LED_PIN 13			// Uwaga, dla wersji z pojedyncza zwykla dioda led oraz dla paska Ledow ws2812B
+#define COLOR_ORDER GRB     // pozadek kolorow
+#define LED_TYPE WS2812B    // typ leda
+#define NUM_LEDS 13         // ilosc
+#define BRIGHTNESS 128		// polowa mocy	 
 
-//Pin 0 - Srodkowy pomiêdzy 4 i 2  w przyszloœci dla  serwa radaru (4,0,2-sprzetowe piny PWM)
+
 //---------------Makra do debugowania-------------
 #define SERIAL_PD 					1	// wlacza i wylacza podleg³e makra
 #define SERIAL_AUDIO_INFO			1	// co sie dzieje ww YtesAudio

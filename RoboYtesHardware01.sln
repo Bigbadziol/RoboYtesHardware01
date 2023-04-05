@@ -25,6 +25,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testYtesRadar", "testYtesRa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testTLED", "C:\Users\linkd\OneDrive\Dokumenty\Arduino\testTLED\testTLED.vcxproj", "{6E0A1A5C-FC67-4714-B92C-DF149391ADFD}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testYtesWSled", "testYtesWSled\testYtesWSled.vcxproj", "{12E82854-0E4C-4E4C-8623-C51127E00367}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -229,6 +231,30 @@ Global
 		{6E0A1A5C-FC67-4714-B92C-DF149391ADFD}.Release|x86.ActiveCfg = Release|ARM
 		{6E0A1A5C-FC67-4714-B92C-DF149391ADFD}.Release|x86.Build.0 = Release|ARM
 		{6E0A1A5C-FC67-4714-B92C-DF149391ADFD}.Release|x86.Deploy.0 = Release|ARM
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|ARM.ActiveCfg = Debug|ARM
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|ARM.Build.0 = Debug|ARM
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|ARM.Deploy.0 = Debug|ARM
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|ARM64.Build.0 = Debug|ARM64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|x64.ActiveCfg = Debug|x64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|x64.Build.0 = Debug|x64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|x64.Deploy.0 = Debug|x64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|x86.ActiveCfg = Debug|x86
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|x86.Build.0 = Debug|x86
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Debug|x86.Deploy.0 = Debug|x86
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|ARM.ActiveCfg = Release|ARM
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|ARM.Build.0 = Release|ARM
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|ARM.Deploy.0 = Release|ARM
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|ARM64.ActiveCfg = Release|ARM64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|ARM64.Build.0 = Release|ARM64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|ARM64.Deploy.0 = Release|ARM64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|x64.ActiveCfg = Release|x64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|x64.Build.0 = Release|x64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|x64.Deploy.0 = Release|x64
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|x86.ActiveCfg = Release|x86
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|x86.Build.0 = Release|x86
+		{12E82854-0E4C-4E4C-8623-C51127E00367}.Release|x86.Deploy.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -237,6 +263,7 @@ Global
 		SolutionGuid = {F16E3C8A-CDCF-4922-9D95-FF138C427DA9}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\wspolne\wspolne.vcxitems*{12e82854-0e4c-4e4c-8623-c51127e00367}*SharedItemsImports = 4
 		src\wspolne\wspolne.vcxitems*{19f6d4fa-9c94-439c-ad0a-1bed27164aa2}*SharedItemsImports = 4
 		src\wspolne\wspolne.vcxitems*{3b3a1776-4f33-4e6b-9792-d93bdf91edf3}*SharedItemsImports = 4
 		Libraries\FireTimer\1.0.5\FireTimer\FireTimer-1.0.5.vcxitems*{5514fb66-be17-4e43-bf3f-e5bf8df52d0e}*SharedItemsImports = 9

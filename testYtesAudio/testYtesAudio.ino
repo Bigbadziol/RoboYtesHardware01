@@ -1,6 +1,8 @@
 #include "setup.h"
 #include "YtesAudio.h"
 #include "YtesZyroskop.h"
+#include "YtesRadar.h"
+
 #include <ArduinoJson.h>
 
 //TODO: porzetestowac dla pewnosci w wariancie HardwareSerial
@@ -37,6 +39,7 @@
 
 YtesAudio* audio;
 YtesZyroskop *zyroskop;
+YtesRadar* radar;
 
 String testUstawGlosnosc() {
     String ret = "";
@@ -93,8 +96,14 @@ void setup() {
     AUDIO_INFO("Test klasy YtesAudio : 1.08");
     AUDIO_INFO("Problem prawy glosnik");
     zyroskop = new YtesZyroskop(&mpu, 100); 
+    radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 4000, SERWO_RADAR_PIN);
+    
     audio = new YtesAudio(&serialLewy, &serialPrawy, 350);
     audio->dodajZyroskop(zyroskop);
+    audio->dodajRadar(radar);
+    audio->uwzglednijZyroskop = false;
+    audio->uwzglednijRadar = false;
+    
     
     // zainicjalizowane ustawienia
     String odpowiedz = audio->odpowiedz();

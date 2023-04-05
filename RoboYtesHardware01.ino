@@ -23,6 +23,7 @@
 #include "YtesNaped.h"
 #include "YtesRadar.h"
 #include "YtesZyroskop.h"
+#include "YtesWSled.h"
 
 
 #include "esp_bt_main.h"
@@ -54,6 +55,7 @@ const char* pinUrzadzenia = "0987";
 YtesRadar* radar;
 YtesNaped* naped;
 YtesZyroskop* zyroskop;
+YtesWSled* ledy;
 
 BdlBluetoothSerial bt; //zamiennie do orginalnej biblioteki
 
@@ -68,7 +70,6 @@ char rc;
 unsigned long msRadarOdczytTest = millis();
 unsigned long msZyroskopTest = millis();
 //--------------------------------------------------------------------------------------------
-CRGB leds[NUM_LEDS];   // leds array
 
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
@@ -97,7 +98,6 @@ void AuthCompleteCallback(boolean success) {
 
 
 void recvWithEndMarker() {
-
 
     while (bt.available() > 0 && newData == false) {
         rc = bt.read();
@@ -158,23 +158,12 @@ void setup() {
     Serial.print("Mac : "); Serial.println(mojMac().c_str());
     Serial.println("Robot gotowy do parowania");
 
-    LEDS.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
-    FastLED.setBrightness(BRIGHTNESS);
-
-    leds[0] = CRGB::Red;
-    leds[1] = CRGB::Green;
-    leds[2] = CRGB::Blue;
-    #define COLOR_START CRGB::Red  // kolor pocz¹tkowy
-    #define COLOR_END CRGB::Black // kolor koñcowy
-    #define START_LED 4 
-    fill_gradient_RGB(leds + START_LED, NUM_LEDS - START_LED, COLOR_START, COLOR_END);
-    FastLED.show();
-
+    ledy = new YtesWSled();
     radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 4000, SERWO_RADAR_PIN);
     naped = new YtesNaped();
     zyroskop = new YtesZyroskop(&mpu, 100); // 0 - kazdy przebieg petli , wiêksza wartoœæ - co okreœlony czas w ms.
 
-    
+    ledy->wzorNiePolaczony();
     //radarRuch180();
     //radar->ustawRadar(90);
     //delay(2000);

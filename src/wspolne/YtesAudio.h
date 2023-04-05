@@ -1,4 +1,5 @@
 // YtesAudio.h
+//TODO : przetestowac rzutowanie int->bool
 
 #ifndef _YTESAUDIO_h
 #define _YTESAUDIO_h
@@ -23,7 +24,9 @@ enum GRUPA_DZWIEKOWA{
 	PRZECHYL_PRZOD_DUZY,	//trzeba miec skrzydla nie kolka, co ja spiderman ? chyba cie pogielo
 	PRZECHYL_TYL_MALY,		// zawsze lzej, chce na sanki, ³iiiii!
 	PRZECHYL_TYL_DUZY,		//naprawde sie boje, zeby sobie wybije,
-	WSTRZAS_POJAZDU			//ojojo, brr , grrr, ale wieje,
+	WSTRZAS_POJAZDU,		//ojojo, brr , grrr, ale wieje,
+	RADAR_BLISKO,			//blizej nie podjade , mam leb rozbic, a co to?
+	PRZYCISKI
 };
 
 typedef struct efektDzwiekowy {
@@ -148,6 +151,9 @@ private:
 	void podglosnijMuzyke();	//metoda pomocnicza do trybu WYCISZANIE
 
 public:
+	bool uwzglednijZyroskop = false;
+	bool uwzglednijRadar = false;
+
 	byte ileEfektowWGrupie(GRUPA_DZWIEKOWA grupa);
 	byte losujZgrupy(GRUPA_DZWIEKOWA grupa);
 
@@ -155,7 +161,7 @@ public:
 	~YtesAudio();
 	void dodajZyroskop(YtesZyroskop* pZyroskop);
 	void dodajRadar(YtesRadar* pRadar);
-
+	
 	void ustawTrybAudio(TRYB_AUDIO nowyTryb);
 	TRYB_AUDIO wezTrybAudio();
 
@@ -517,12 +523,12 @@ void YtesAudio::graj(KANAL kanal, TYP_AUDIO typ, int nrNagrania) {
 */
 void YtesAudio::audioHandler() {
 	// obs³uga na podstawie radaru
-	if (radar != nullptr && millis() > msOstatniAutoEfekt) {
+	if (radar != nullptr && millis() > msOstatniAutoEfekt && uwzglednijRadar == true) {
 		//jesli costam costam
 		// msOstatniAutoEfekt = millis() + msPrzerwaEfektyBaza + random(msPrzerwaEfektyLos);
 	};
 	//obs³uga efektów dzwiêkowych na podstawie wskazan zyroskopu.
-	if (zyroskop != nullptr && millis() > msOstatniAutoEfekt) {
+	if (zyroskop != nullptr && millis() > msOstatniAutoEfekt && uwzglednijZyroskop == true) {
 		STAN_ZYROSKOP stan = zyroskop->pobierzStan();
 		byte indexEfektu;
 		msOstatniAutoEfekt = millis() + msPrzerwaEfektyBaza + random(msPrzerwaEfektyLos);
@@ -669,6 +675,16 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vLO.isNull()) {
 		grajEfekt(vLO.as<int>());
 	};
+	//Uwzglednij zyroskop
+	JsonVariant vUZ = (*dane)["UZ"];
+	if (!vUZ.isNull()) {
+		uwzglednijZyroskop = vUZ.as<boolean>();
+	}
+	//Uwzglednij radar
+	JsonVariant vUR = (*dane)["UR"];
+	if (!vUR.isNull()) {
+		uwzglednijRadar = vUR.as<boolean>();
+	}
 };
 
 /*
@@ -685,6 +701,8 @@ String YtesAudio::odpowiedz() {
 	objData["PG"] = glosnoscPrawy;
 	objData["PW"] = poziomWyciszenia;
 	objData["PO"] = _PO;
+	objData["UZ"] = (int)uwzglednijZyroskop;
+	objData["UR"] = (int)uwzglednijRadar;
 
 	JsonArray arrL1 = objData.createNestedArray("L1"); // cenzuralne nagrania
 	JsonArray arrL2 = objData.createNestedArray("L2"); // niecenzuralne nagrania

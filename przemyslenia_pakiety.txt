@@ -42,6 +42,9 @@ Przykladowo : po restarcie mp3Playera na nowo trzeba ustawic glosnosc
     "LO"   <- efekty (lewy odtwarzanie), tego nie wysylamy bo z natury efekt ma ok 2-3 sek.
 	"L1" : ["Nazwa utworu 1","Nazwa utworu 2",...], (utwory grzeczne)
 	"L2" :  ["Nazwa utworu 1","Nazwa utworu 2",...], (utwory niecenzuralne)
+
+	"UZ" : 0,1 <- uwzgledniaj dzwieki jesli zyroskop wlaczony
+	"UR" : 0,1 <- uwzgledniaj dzwieki jesli radar wlaczony
 }
 
 //{"TOR":1,"TRYB":3,"PW":10,"LG":20,"PG":17,"LO":2}
@@ -56,7 +59,10 @@ Przykladowo : po restarcie mp3Playera na nowo trzeba ustawic glosnosc
 		"LO" : 1..n			<- Numer efektu dzwiekowego (z wskazanego katalogu przez TOR)						
 		"PO" : 0..n			<- Prawy odtwarzanie (numer nagrania(muzyki) z wczesniej wskazanego katalogu)
 							   0 - zarezerwowane dla kolejnego utworu z listy
-		(olac ale pamietac)"RESET" : 1		<-WYWALIC - ustawia wartosci fabryczne,same problemy
+		
+		"UZ" : 0..1			<- uwzgledniaj dzwieki jesli zyroskop wlaczony
+		"UR" : 0..1			<- uwzgledniaj dzwieki jesli radar wlaczony
+
 	}
 }
 //----------------------------------------------------------------------------------------------
