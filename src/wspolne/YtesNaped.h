@@ -1,22 +1,22 @@
 // YtesNaped.h
-// TODO: zatrzymaj()
-// Uwaga, przyjrzec sie zachowaniu GPIO0 - przyszly radar  , ze wgledu na klod w YtesServo.h moze generowac blad
+// Zgoednie z dokumentacja , dla serwa AR3606HB , zakres impulsow to 800-2200 , pozycja neutralna to 15000
 #ifndef _YTESNAPED_h
 #define _YTESNAPED_h
 #include "arduino.h"
 #include "YtesServo.h"
+#include "YtesRadar.h"
 
 enum KOLO{ LEWE,PRAWE };
 
 class YtesNaped {
 	private:
-		const int LEWE_PRZOD_US = 2200;
-		const int LEWE_TYL_US = 800;
-		const int LEWE_STOP_US = 1490;//1500
+		const int LEWE_PRZOD_US = 2000; //org. 2200
+		const int LEWE_TYL_US = 1000;	//org. 800
+		const int LEWE_STOP_US = 1490;	
 
-		const int PRAWE_PRZOD_US = 800;
-		const int PRAWE_TYL_US = 2200;
-		const int PRAWE_STOP_US = 1500;
+		const int PRAWE_PRZOD_US = 1000;  //tu dobrze : 800
+		const int PRAWE_TYL_US = 2000;   //tu dobrze : 2200
+		const int PRAWE_STOP_US = 1490;  //tu dobrze : 1500
 
 		const unsigned long msImpuls = 300; //czas wykonywania polecenia ruchu
 		unsigned long msTeraz = millis(); //aktualny czas w ms.
@@ -28,9 +28,17 @@ class YtesNaped {
 		//void zalaczPrawe();
 		boolean poruszamSie = false;
 		void uaktualnijStoper(); // polecenie modyfikuje stan poruszamSie
+		//...
+		boolean _autostop = false; //czy mam uniemozliwic blokade przed udezeniem w przeszkode(w oparciu o radar).
+		float _odlegloscStop = 15.0f; // odleg³oœæ wyrazona w cm. Zbli¿enie siê do przeszkody na odleg³oœæ mniejsz¹
+									  // zablokuje mo¿liwoœæ wykonania ruchów :prawo-przod,przod,lewo-przod
+		YtesRadar* radar = nullptr;
+		boolean blokujRuchDoPrzodu();
 public:
 	YtesNaped();
 	~YtesNaped();
+	void dodajRadar(YtesRadar* pRadar);
+
 	// Polecenia dla kol na zasadzie : raz nadany kierunek kontynuowany jest a¿ do nadejœcia kolejnego polecenia.
 	// polecenia nie modyfikuj¹ zmiennej poruszamSie.
 	void ruchLewePrzod();
@@ -62,9 +70,13 @@ public:
 	// kazde polecenie() ruchu odswieza czas zatrzymania o wartosc impuls. Metoda musi byc wywolywana , niezaleznie , cyklicznie
 	// w glowej petli programu, modyfikuje zmienna poruszamSie
 
-	void obslozPolecenieDane(JsonObject* dane); //obsluga samego obiektu.
+	void wlaczObslugeRadaru();
+	void wylaczObslugeRadaru();
 
+	void obslozPolecenieDane(JsonObject* dane); //obsluga samego obiektu.
+	String odpowiedz();
 };
+
 /**
 * @brief ustaw poczatkowe parametry serw kol, pamietac ¿e na pa³ê ko¿ystamy z biblioteki ktora obs³uguje serwa 180
 * nie 360.
@@ -72,12 +84,11 @@ public:
 YtesNaped::YtesNaped() {
 	//serwoLewe.attach(LEWE_KOLO_PIN,Servo::CHANNEL_NOT_ATTACHED,0,360);
 	//serwoPrawe.attach(PRAWE_KOLO_PIN, Servo::CHANNEL_NOT_ATTACHED, 0, 360);
-	
-	serwoLewe.attach(LEWE_KOLO_PIN, Servo::CHANNEL_NOT_ATTACHED, 0, 360,800,2200);
-	serwoPrawe.attach(PRAWE_KOLO_PIN, Servo::CHANNEL_NOT_ATTACHED, 0, 360,800,2200);
-	
+	serwoLewe.attach(LEWE_KOLO_PIN, Servo::CHANNEL_NOT_ATTACHED, 0, 360, 800, 2200);
+	serwoPrawe.attach(PRAWE_KOLO_PIN, Servo::CHANNEL_NOT_ATTACHED, 0, 360, 800, 2200);
 	NAPED_INFO("[Naped] -> serwa ustawione.");
-}
+};
+
 /**
 * @brief Odlacz impuls sterujacy serwami obu kol.
 */
@@ -85,8 +96,15 @@ YtesNaped::~YtesNaped() {
 	serwoLewe.detach();
 	serwoPrawe.detach();
 	NAPED_INFO("[Naped] -> serwa odlaczone.");
+};
 
-}
+/**
+* @brief Dodaj radar
+*/
+void YtesNaped::dodajRadar(YtesRadar* pRadar) {
+	radar = pRadar;
+};
+
 /**
 * @brief Ustaw czas zatrzymania pojazdu.
 */
@@ -94,6 +112,27 @@ void YtesNaped::uaktualnijStoper() {
 	poruszamSie = true;
 	msStop = millis() + msImpuls;
 }
+
+/**
+* @brief Funkcja pomocnicza która sprawdza czy : radar jest podpiêty, czy autostop w³¹czony , czy przekroczona bezpieczna odleg³oœæ
+* True - jeœli ruch ma byæ zablokowany
+*/
+boolean YtesNaped::blokujRuchDoPrzodu() {
+	if (_autostop == false) {
+		return false;
+	}else {
+		if (radar != nullptr) {
+			float odleglosc = radar->dystans();
+			//NAPED_INFO_V("(blokada ruchu) Odleglosc:", odleglosc);
+			if (_autostop == true && odleglosc > 2 && odleglosc < _odlegloscStop) {
+				NAPED_INFO("(naped) : blokada ruchu");
+				return true;
+			};
+		};
+	};
+	return false;
+};
+
 //------------------------------- POLECENIA DLA KOL ---------------------------------
 /**
 * @brief Ruch lewego kola do przodu. Po wydaniu  polecenia ruch bêdzie kontynuowany az do czasu otrzymania
@@ -109,7 +148,7 @@ void YtesNaped::ruchLewePrzod() {
 */
 void YtesNaped::ruchLeweTyl() {
 	serwoLewe.writeMicroseconds(LEWE_TYL_US);
-}
+};
 
 /**
 * @brief Zatrzymanie lewego kola. Po wydaniu  polecenia ruch bêdzie kontynuowany az do czasu otrzymania
@@ -117,7 +156,7 @@ void YtesNaped::ruchLeweTyl() {
 */
 void YtesNaped::ruchLeweStop() {
 	serwoLewe.writeMicroseconds(LEWE_STOP_US);
-}
+};
 
 /**
 * @brief Ruch prawego kola do przodu. Po wydaniu  polecenia ruch bêdzie kontynuowany az do czasu otrzymania
@@ -133,7 +172,7 @@ void YtesNaped::ruchPrawePrzod() {
 */
 void YtesNaped::ruchPraweTyl() {
 	serwoPrawe.writeMicroseconds(PRAWE_TYL_US);
-}
+};
 
 /**
 * @brief Zatrzymanie prawego kola. Po wydaniu  polecenia ruch bêdzie kontynuowany az do czasu otrzymania
@@ -141,15 +180,19 @@ void YtesNaped::ruchPraweTyl() {
 */
 void YtesNaped::ruchPraweStop() {
 	serwoPrawe.writeMicroseconds(PRAWE_STOP_US);
-}
+};
+
 //------------------------------- POLECENIA DLA POJAZDU ---------------------------------
 /**
 * @brief  Logiczny ruch pojazdu do przodu. Serwo prawe krêci siê w przeciwnym ruchu do serwa lewego.
+* Testuj warunek blokowania ruchu, kiedy przeszkoda znajduje siê zbyt blisko.
 */
 void YtesNaped::ruchPrzod() {
-	uaktualnijStoper();
-	ruchLewePrzod();
-	ruchPrawePrzod();
+	if (!blokujRuchDoPrzodu()) {
+		uaktualnijStoper();
+		ruchLewePrzod();
+		ruchPrawePrzod();
+	};
 };
 
 /**
@@ -159,7 +202,7 @@ void YtesNaped::ruchTyl() {
 	uaktualnijStoper();
 	ruchLeweTyl();
 	ruchPraweTyl();
-}
+};
 
 /**
 *  @brief Zatrzymaj kola.
@@ -168,27 +211,33 @@ void YtesNaped::ruchStop() {
 	poruszamSie = false;
 	ruchLeweStop();
 	ruchPraweStop();
-}
+};
 
 /**
 * @biref Logiczny skrêt przodem w prawo. 
-* Prawe ko³o stoi , lewe krêci siê do przodu
+* Prawe ko³o stoi , lewe krêci siê do przodu.
+* Testuj warunek blokowania ruchu, kiedy przeszkoda znajduje siê zbyt blisko.
 */
 void YtesNaped::ruchPrawoPrzod() {
-	uaktualnijStoper();
-	ruchPraweStop();
-	ruchLewePrzod();
-}
+	if (!blokujRuchDoPrzodu()) {
+		uaktualnijStoper();
+		ruchPraweStop();
+		ruchLewePrzod();
+	};
+};
 
 /**
 * @biref Logiczny skrêt przodem w lewo.
-* Lewe ko³o stoi , pprawe krêci siê do przodu
+* Lewe ko³o stoi , prawe krêci siê do przodu.
+* Testuj warunek blokowania ruchu, kiedy przeszkoda znajduje siê zbyt blisko.
 */
 void YtesNaped::ruchLewoPrzod() {
-	uaktualnijStoper();
-	ruchLeweStop();
-	ruchPrawePrzod();
-}
+	if (!blokujRuchDoPrzodu()) {
+		uaktualnijStoper();
+		ruchLeweStop();
+		ruchPrawePrzod();
+	};
+};
 
 /**
 * @biref Logiczny skrêt ty³em w prawo.
@@ -270,13 +319,28 @@ void YtesNaped::zatrzymaj() {
 		NAPED_INFO("Zatrzymano pojazd.");
 	}
 }
+/**
+* @brief Uwzglednij wskazania radaru przed wykonaniem ruchu w kierunkach : prawo-przod,przod, lewo-przod
+* W³¹czenie opcji blokuje mo¿liwoœæ ude¿enia w przeszkodê.
+*/
+void YtesNaped::wlaczObslugeRadaru() {
+	_autostop = true;
+};
+
+/**
+* @brief Wy³¹cz radar, mo¿na waln¹æ w przeszkodê.
+*/
+void YtesNaped::wylaczObslugeRadaru() {
+	_autostop = false;
+};
+
 
 /**
 * @brief Na podstawie danych z pakietu ustal kierunek ruchu
 * {"ruch":{"PT":1}} , tu trafi -> {"PT":1}
 */
 void YtesNaped::obslozPolecenieDane(JsonObject* dane) {
-	
+
 	JsonVariant vLP = (*dane)["LP"];
 	if (!vLP.isNull()) {
 		NAPED_INFO("Polecenie ruch -> lewo-przod");
@@ -307,8 +371,31 @@ void YtesNaped::obslozPolecenieDane(JsonObject* dane) {
 	if (!vPT.isNull()) {
 		NAPED_INFO("Polecenie ruch -> prawo-tyl");
 		ruchPrawoTyl();
-	};		
-}
+	};
+	JsonVariant vAutostop = (*dane)["AUTOSTOP"];
+	if (!vAutostop.isNull()) {
+		int as = vAutostop.as<int>();
+		NAPED_INFO_V("Ustawienie autostop :", as);
+		if (as == 1) _autostop = true;
+		else _autostop = false;
+	};
+};
+/**
+* @brief Przygoduj odpowiedz dotyczac¹ ustawieñ modu³u napêd.
+* Obecnie zwracane tylko ustawienie 'autostop'
+*/
+String YtesNaped::odpowiedz() {
+	StaticJsonDocument<256> doc;	
+	JsonObject objData = doc.createNestedObject("naped");
+	objData["AUTOSTOP"] = (byte)_autostop;
+	String tmp = "";
+	size_t resSize = serializeJson(doc, tmp);
+
+	int firstIndex = tmp.indexOf('{');
+	int lastIndex = tmp.lastIndexOf('}');
+	String odp = tmp.substring(firstIndex + 1, lastIndex);
+	return odp;
+};
 
 
 #endif

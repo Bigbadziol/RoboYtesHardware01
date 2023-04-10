@@ -26,7 +26,7 @@ enum GRUPA_DZWIEKOWA{
 	PRZECHYL_TYL_DUZY,		//naprawde sie boje, zeby sobie wybije,
 	WSTRZAS_POJAZDU,		//ojojo, brr , grrr, ale wieje,
 	RADAR_BLISKO,			//blizej nie podjade , mam leb rozbic, a co to?
-	PRZYCISKI
+	PRZYCISKI				//dowolnoœæ 8 dzwiêków podpiêtych pod przyciski
 };
 
 typedef struct efektDzwiekowy {
@@ -60,7 +60,7 @@ public :
 
 class YtesAudio {
 private:
-	int polecenieOpoznienie = 350;
+	int polecenieOpoznienie = 350; //rozny czas odpowiedzi konkretnych scalaków(7 rodz.) dla modu³ów mp3. Od 100ms do nawet 500ms.
 #if UZYJ_HARDWARE == 1
 	HardwareSerial* portLewy;
 	HardwareSerial* portPrawy;
@@ -70,9 +70,18 @@ private:
 #endif
 
 	TOR defTor = CENZURA; //0..1 , 0-tor cenzura , 1-tor bez cenzury
-	const int defGlosnoscLewy = 30; //0..30
-	const int defGlosnoscPrawy = 15;//0..30
-	const int defPoziomWyciszenia = 5;//0..15
+						  //Tor definiuje z których fizycznie katalogów pobierane s¹ nagrania muzyczne i dŸwiêki
+						  //Katalogi : (forma zapisu nazw katalogow ma kluczowa - liczba w zapisie 2-cyfrowym)
+						  // 01 - cenzura muzyka
+						  // 02 - cenzura efekty dŸwiêkowe
+						  // 03 - bez cenzury muzyka
+						  // 04 - bez cenzury dŸwiêki
+						  // 05 - muzyka pocz¹tkowa - tylko 1 utwór odgrywany kiedy robot nie jest po³¹czony z appk¹
+						  // 06 - jeden dzwiêk witaj¹cy po nast¹pieniu parowania
+
+	const int defGlosnoscLewy = 30; //0..30 , Domyslnie dzwieki
+	const int defGlosnoscPrawy = 15;//0..30	, Domyslnie muzyka
+	const int defPoziomWyciszenia = 5;//1..15
 	
 	const int defKatMuzyka = 1; //katalog dla glosnika lewego , dla cyfry 1, fizycznie musi miec postac "001" 
 	const int defKatEfekty = 2;//katalog dla glosnika prawego, dla cyfry 2, fizycznie musi miec postac "002"
@@ -97,25 +106,10 @@ private:
 	const char* listaUtworowCenzura[iloscUtworow] = {		"Jazz 1",
 															"Jazz 2",
 															"Jazz 3"};
-/*
-    //Na ten moment nie u¿ywane
-	const char* listaEfektowCenzura[iloscEfektow] = {		"witaj",
-															"postaw mnie",
-															"postaw mnie prosto",
-															"stromo tutaj",
-															"z gorki jest"};
-*/
-	const char* listaUtworowBezCenzury[iloscUtworow] = { "Kung-fu Panda",
+
+	const char* listaUtworowBezCenzury[iloscUtworow] = {	"Kung-fu Panda",
 															"Deadpool - Bodies",
 															"Fight back" };
-/*
-	//Na ten moment nie u¿ywane
-	const char* listaEfektowBezCenzury[iloscEfektow] = {	"(b)witaj",
-															"(b)postaw mnie",
-															"(b)postaw mnie prosto",
-															"(b)stromo tutaj",
-															"(b)z gorki jest" };
-*/	
 
 
 	DFPlayerMini_Fast playerLewy;
@@ -156,6 +150,7 @@ public:
 
 	byte ileEfektowWGrupie(GRUPA_DZWIEKOWA grupa);
 	byte losujZgrupy(GRUPA_DZWIEKOWA grupa);
+	int indexMuzykaKatalog() { return _PO; }; //Obejœcie : który utwór jest ustawiony do grania,z wzglêdu na tor
 
 	YtesAudio(SoftwareSerial* serialportLewego, SoftwareSerial* serialportPrawego,int czasOpoznieniaPolecenia);
 	~YtesAudio();
@@ -174,12 +169,15 @@ public:
 	void grajMuzyke(int nrNagrania);
 	void grajEfekt(int  nrNagrania); 
 	void graj(KANAL kanal, TYP_AUDIO typ,  int nrNagrania);
+
+	void grajMuzykePowitalna();
+	void grajEfektPowitalny();
+	
 	void glosnosc(KANAL kanal, int wartosc);
 	void obslozPolecenieDane(JsonObject* dane); //obsluga samego obiektu "dane"
+	String odpowiedz();
 
 	void audioHandler();
-
-	String odpowiedz();
 	void dump(KANAL odtwarzaczSymbol); //L lub P
 };
 
@@ -319,6 +317,9 @@ int YtesAudio::indexDlaMuzyki(int numerNagrania) {
 	return retIndex;
 };
 
+/*
+* @brief Zliscz faktyczn¹ iloœæ dodanych efektów dŸwiêkowych dodanych do danej grupy
+*/
 byte YtesAudio::ileEfektowWGrupie(GRUPA_DZWIEKOWA grupa) {
 	byte ret = 0;
 	for (int i = 0; i < iloscEfektow; i++) {
@@ -326,6 +327,7 @@ byte YtesAudio::ileEfektowWGrupie(GRUPA_DZWIEKOWA grupa) {
 	}
 	return ret;
 };
+
 /**
  * @brief Iteruj tablicê zliczaj¹c ilosc elementów nale¿¹cych do grupy.
  * Na tej podstawie wylosuj dzwiêk.
@@ -407,8 +409,11 @@ void YtesAudio::grajMuzyke(int nrNagrania) {
 	if (wartosc > iloscUtworow) wartosc = 0;
 	_PO = wartosc; // tymczasowe obejœcie problemu z indexowaniem utworów
 	if (wartosc == 0) {
-		AUDIO_INFO_V("Zapetlam katalog :", katMuzyka)
-			playerPrawy.repeatFolder(katMuzyka);
+		AUDIO_INFO_V("Zapetlam katalog z muzyka :", katMuzyka);
+		playerPrawy.repeatFolder(katMuzyka);
+		if (tryb == STEREO_MUZYKA) {
+			playerLewy.repeatFolder(katMuzyka);
+			}
 		return;
 	};
 
@@ -515,6 +520,20 @@ void YtesAudio::graj(KANAL kanal, TYP_AUDIO typ, int nrNagrania) {
 	default:
 		break;
 	};
+};
+
+/**
+* @brief Graj utwór powitalny po w³¹czeniu robota. Jeden utwor znajduj¹cy siê w katalogu numer :05
+*/
+void YtesAudio::grajMuzykePowitalna() {
+	playerPrawy.playFolder(5, 1);
+};
+
+/**
+* @brief Grej efekt powitalny po w³¹czeniu robota. Jeden efekt znajduj¹cy siê w katalogu numer : 06
+*/
+void YtesAudio::grajEfektPowitalny() {
+	playerLewy.playFolder(6, 1);
 };
 
 /**

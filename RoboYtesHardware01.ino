@@ -1,20 +1,21 @@
 /*
+    07.04.23 - ostatecznie 3 g³owne obiekty do obslugi "naped" , "audio", "ledy" - poprawic wszystko w apce.
+    Dodatkowo, "autostop" , tag AUTOSTOP - ma trafic do naped
+    Przetestowaæ  w nastêpuj¹cej kolejnoœci :
+    V- Klasê radar - zmiana sposobu liczenia odleg³oœci i raportowania b³êdu
+    V -Odpowiedz z modu³u naped
+    Ca³kowit¹ odpowiedŸ
+    Blokadê ruchu - dla przekroczonej bezpiecznej odleg³oœci
+    Aplikacja tel - zgodoœæ obiektów przychodz¹cych i wychodz¹cych    
+ */          
+
+/*
 * // Uwaga, przyjrzec sie zachowaniu GPIO0 - przyszly radar  , ze wgledu na klod w YtesServo.h moze generowac blad
 * //This is bold text to get your attention, I can make it red as well: It is "\r\n" not "\n\r". <--NA LEDZIKU SPRAWDZIC
-
-
-/*
-* Powazny problem z szybkoscia komunikacji pomiedzy app-hardware
-* - blok obslugi przychodzacych danych bt, przeniesiony do funkcji- nie spowalnia   testYtesNaped->symulacjaPetliBluetooth()
-* - spamowanie osobnym guzikiem bez klasy communicator nie spowalnia (po stronie apki) wszystko ok
-* - dodanie delay, do petli glownej nie zmienia
 */
 
-/*
-* Jak z dzwiêkiem, czy oba kana³y maj¹ graæ równoczeœnie czy w przypadku np. uderzenia , lewy(domyslnie muzyka) ma 
-* zostaæ zapa³zowany ?
-* 
-*/
+
+// Testowe uk³ady , upewnic sie !
 // ESP32 - mini 01) AC:67:B2:2D:16:92
 //  C8:F0:9E:F4:C6:3E , a poelutownym MPU6050
 
@@ -24,13 +25,12 @@
 #include "YtesRadar.h"
 #include "YtesZyroskop.h"
 #include "YtesWSled.h"
-
+#include "YtesAudio.h"
 
 #include "esp_bt_main.h"
 #include "esp_bt_device.h"
 //#include "BluetoothSerial.h" 
 #include "BdlBluetoothSerial.h" // uwaga dla zgodnosci z ledzikiem
-
 #include <FastLED.h>
 
 
@@ -41,14 +41,12 @@ const char* pinUrzadzenia = "0987";
 //HardwareSerial serialPrawy(1);// - mapuj uart1 (22,14); - do komunikacji z playerPrawy
 
 
-
-
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#error Bluetooth wylaczone na poziomie ROTSA , menuconfig sie klania.
 #endif
 
 #if !defined(CONFIG_BT_SPP_ENABLED)
-#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
+#error Serial Bluetooth wylaczone , menuconfig sie klania.
 #endif
 
 
@@ -56,7 +54,7 @@ YtesRadar* radar;
 YtesNaped* naped;
 YtesZyroskop* zyroskop;
 YtesWSled* ledy;
-
+YtesAudio* audio;
 BdlBluetoothSerial bt; //zamiennie do orginalnej biblioteki
 
 //---------------Bufor bluetooth---------------------------
@@ -95,59 +93,67 @@ void AuthCompleteCallback(boolean success) {
     };
 #endif
 };
-
-
-void recvWithEndMarker() {
-
-    while (bt.available() > 0 && newData == false) {
-        rc = bt.read();
-
-        if (rc != endMarker) {
-            receivedChars[ndx] = rc;
-            ndx++;
-            if (ndx >= numChars) {
-                ndx = numChars - 1;
-            }
-        }
-        else {
-            receivedChars[ndx] = '\0'; // terminate the string
-            ndx = 0;
-            newData = true;
-        }
-    }
+//--------------------------------------------------------------------------------------------
+String pelnaOdpowiedz() {
+    String ret = "";
+    ret.reserve(512); //zerknac ile faktycznie teraz jest danych i dodaæ 50%
+    ret.concat("{");
+    ret.concat(naped->odpowiedz());
+    ret.concat(",");
+    ret.concat(audio->odpowiedz());
+    ret.concat(",");
+    ret.concat(ledy->odpowiedz());
+    ret.concat("}");
+    ret.concat("#$!#"); // ten znacznik rozpoznaje appka , jest to informacja o koncu bloku danych
+    return ret;
+};
+//--------------------------------------------------------------------------------------------
+void stanNiePolaczony() {
+    ledy->wzorNiePolaczony();
+    audio->grajEfektPowitalny();
+    delay(1000);
+    audio->grajMuzykePowitalna();
+};
+//--------------------------------------------------------------------------------------------
+void stanPolaczony() {
+    ledy->wzorPolaczony();
+    audio->grajMuzyke(1);
+    //audio->grajMuzyke(audio->indexMuzykaKatalog()); //utwór ustawiony przez u¿ytkownika
 }
-
-
-void showNewData() {
-    if (newData == true) {
-        Serial.print("Dane :  ");
-        Serial.println(receivedChars);
-        newData = false;
-    }
-}
-
-
+// --------------- Funkcje testowe -----------------------------------------------------------
 void radarRuch180() {
     for (int i = 0; i <= 180l; i++) {
         radar->ustawRadar(i);
         delay(25);
     };
 };
-
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------
 void setup() {
     randomSeed(analogRead(A0)); //pamietac do generatora!!
     Wire.begin(); //Pamietac!! do glownego
 
+    //Serial do wyœwietlania informacji debugowych
+#if SERIAL_PD == 1
     Serial.begin(115200);
     while (!Serial) continue;
     delay(1000);
+#endif
 
-    Serial.println("-----------------------------------------------------");
-    Serial.println("RoboYtesHardware 1.06");
-    Serial.println("Zmiana sposobu pobierania danych , przez buforowanie.");
-    Serial.println("Ledy");
+#if UZYJ_HARDWARE == 1
+    //PD_INFO("Uwaga, komunikacja UART - HardwareSerial");
+    serialLewy.begin(9600, SERIAL_8N1, SERIAL2_LEWY_RX, SERIAL2_LEWY_TX);
+    serialPrawy.begin(9600, SERIAL_8N1, SERIAL1_PRAWY_RX, SERIAL1_PRAWY_TX);
+#else
+    //PD_INFO("Uwaga, komunikacja UART - SoftwareSerial");
+    serialLewy.begin(9600);
+    serialPrawy.begin(9600);
+#endif 
+
+    PD_INFO("-----------------------------------------------------");
+    PD_INFO("RoboYtesHardware 1.13");
+    PD_INFO("Zmiana sposobu pobierania danych , przez buforowanie.");
+    PD_INFO("Komenda PAPA");
 
 
     bt.onAuthComplete(AuthCompleteCallback);
@@ -156,57 +162,72 @@ void setup() {
     Serial.print("Urzadzenie : "); Serial.println(nazwaUrzadzenia);
     Serial.print("Pin :"); Serial.println(pinUrzadzenia);
     Serial.print("Mac : "); Serial.println(mojMac().c_str());
+
     Serial.println("Robot gotowy do parowania");
 
     ledy = new YtesWSled();
-    radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 4000, SERWO_RADAR_PIN);
-    naped = new YtesNaped();
+    radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 2000, SERWO_RADAR_PIN); //2000->4000(wartoœæ domyœlna)
     zyroskop = new YtesZyroskop(&mpu, 100); // 0 - kazdy przebieg petli , wiêksza wartoœæ - co okreœlony czas w ms.
+    
+    naped = new YtesNaped();
+    naped->dodajRadar(radar);
+    naped->wlaczObslugeRadaru(); //uwzglêdnij w poleceniu ruchu , mo¿liwoœæ zablokowania go przez przeszkodê.
 
-    ledy->wzorNiePolaczony();
-    //radarRuch180();
-    //radar->ustawRadar(90);
-    //delay(2000);
-    // 
-    // 
-    //naped->ruchPrawoPrzod();
+    audio = new YtesAudio(&serialLewy, &serialPrawy, 350);
+    audio->dodajZyroskop(zyroskop);
+    audio->dodajRadar(radar);
+    audio->uwzglednijZyroskop = false;
+    audio->uwzglednijRadar = false;
 
+    stanNiePolaczony(); //Oswietlenie utwor - przed po³¹czeniem z aplikacj¹
 
+#if UZYJ_HARDWARE == 0      //Tylko dla SoftwareSerial
+    serialLewy.listen();
+#endif
+
+   
+    Serial.println("TEST PELNEJ ODPOWIEDZI :");
+    Serial.println(pelnaOdpowiedz());
 };
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 void loop() {
     //---------------------Odczyt radar -  zasieg---------------------------------------
+    radar->mierzDystans();
+/*
     if (millis() > msRadarOdczytTest) {
         msRadarOdczytTest = millis() + 1000;
-//        Serial.printf("Testowy odczyt odleglosci : %.2f \n", radar->dystansCm());
+        Serial.printf("Testowy odczyt odleglosci : %.2f \n", radar->dystans());
     };
+*/
     //--------------------Zyroskop odczyt pozycji---------------------------------------
     zyroskop->uaktualnijOdczyty();
+/*
     if (millis() > msZyroskopTest) {
         msZyroskopTest = millis() + 500;
         zyroskop->wypiszKluczowePomiary();
     };
+*/
+    //--------------------Audio---------------------------------------------------------
+    audio->audioHandler();
 
     //---------------------BLUETOOTH----------------------------------------------------
     //zaladuj dane do bufora
     while (bt.available() > 0 && newData == false) {
         rc = bt.read();
-
         if (rc != endMarker) {
             receivedChars[ndx] = rc;
             ndx++;
             if (ndx >= numChars) {
                 ndx = numChars - 1;
             }
-        }
-        else {
-            receivedChars[ndx] = '\0'; // terminate the string
+        }else {
+            receivedChars[ndx] = '\0'; // koniec stringa
             ndx = 0;
             newData = true;
-        }
-    }
+        };
+    };
     // znak \n odnaleziony - mozemy dzialac dalej
     if (newData == true) {
         Serial.print("Dane surowe :  "); Serial.println(receivedChars);
@@ -218,36 +239,50 @@ void loop() {
         }
         else {
             JsonObject thisData = thisJson.as<JsonObject>();
-            JsonVariant cmd = thisData["cmd"];
+            //prosba o poadanie danych konfiguracyjnych
+            JsonVariant cmd = thisData["cmd"];                
             if (!cmd.isNull()) {
                 String cmdDane = cmd.as<String>();
                 PD_INFO_V("Przychadzaca komenda: ", cmdDane);
                 if (cmdDane.equalsIgnoreCase("DANE_PROSZE")) {
                     PD_INFO("[ROBOT] -> prosba o dane.");
-                    bt.println("{\"audio\":{}}#$!#");
+                    bt.println(pelnaOdpowiedz());
+                    //bt.println("{\"audio\":{}}#$!#");
+                    stanPolaczony(); //zaswiec lampkami , utwor wybrany , itp
+                }
+                else if (cmdDane.equalsIgnoreCase("PAPA")) {
+                    PD_INFO("[Robot] -> rozlaczenie aplikacji");
+                    stanNiePolaczony();
                 }
                 else {
                     PD_INFO("[ROBOT] -> nieznana komenda");
                 }
             }
-            JsonVariant ruch = thisData["ruch"];
-            if (!ruch.isNull()) {
-                //PD_INFO("[ROBOT] -> wykonaj ruch");
-                JsonObject ruchDane = ruch.as<JsonObject>();
-                naped->obslozPolecenieDane(&ruchDane);
+            //polecenia dla modulu 'naped'
+            JsonVariant vNaped = thisData["naped"];
+            if (!vNaped.isNull()) {
+                PD_INFO("[ROBOT] -> obiekt naped");
+                JsonObject daneNaped = vNaped.as<JsonObject>();
+                naped->obslozPolecenieDane(&daneNaped);
             };
-            JsonVariant audio = thisData["audio"];
-            if (!audio.isNull()) {
-                JsonObject audioDane = audio.as<JsonObject>();
+            //polecenie dla modulu 'audio'
+            JsonVariant vAudio = thisData["audio"];
+            if (!vAudio.isNull()) {
                 PD_INFO("[ROBOT]-> obiekt audio");
+                JsonObject daneAudio = vAudio.as<JsonObject>();                
+                audio->obslozPolecenieDane(&daneAudio);
             };
+            //polecenie dla modulu 'ledy'
+            JsonVariant vLedy = thisData["ledy"];
+            if (!vLedy.isNull()) {
+                PD_INFO("[ROBOT]-> obiekt ledy.");
+                JsonObject daneLedy = vLedy.as<JsonObject>();
+                ledy->obslozPolecenieDane(&daneLedy);
+            };
+
         };
-
-
-
         newData = false;
     }
 
-    naped->zatrzymaj();
-  
+    naped->zatrzymaj();  
 };

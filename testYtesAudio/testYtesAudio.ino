@@ -111,7 +111,7 @@ void setup() {
     Serial.println(odpowiedz.c_str());
 
     audio->ustawTor(BEZ_CENZURY);
-    audio->ustawTrybAudio(NORMALNY);
+    audio->ustawTrybAudio(WYCISZANIE);
     delay(350);
 
     //audio->graj(LEWY, MUZYKA, 2);
@@ -137,7 +137,7 @@ void loop() {
     //Losowe efekty dzwiekowe , dla roznych trybow ustawienia obiektu audio
     if (millis() - timerPrawy > 8000) {
         timerPrawy = millis();
- //      losowyEfektDzwiekowy(5);
+       losowyEfektDzwiekowy(5);
     };
 
 /*

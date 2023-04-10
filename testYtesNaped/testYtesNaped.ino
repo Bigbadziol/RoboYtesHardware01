@@ -1,10 +1,11 @@
-//Bluetooth joystick free app - zerknac co to :
-
 #include "setup.h"
 #include "YtesNaped.h"
+#include "YtesRadar.h"
 
 YtesNaped *naped;
-unsigned long msStop = millis(); // do symulacji klikniec przez uzytkownika
+YtesRadar* radar;
+
+long msNastepnyRuch = millis()+ 300L;
 
 //zmieniona stala w YtesServo.h  MAX_ANGLE = 180 na 360
 //wstepne ustawienie msImpuls = 200
@@ -94,29 +95,73 @@ void symulacjaPetliBluetooth() {
     };
 }
 
+
+void testRuchLewe() {
+    naped->ruchLewePrzod();
+    delay(2000);
+    naped->ruchLeweStop();
+    delay(2000);
+    naped->ruchLeweTyl();
+    delay(2000);
+    naped->ruchLeweStop();
+};
+
+void testRuchPrawe() {
+    naped->ruchPrawePrzod();
+    delay(2000);
+    naped->ruchPraweStop();
+    delay(2000);
+    naped->ruchPraweTyl();
+    delay(2000);
+    naped->ruchPraweStop();
+
+};
+
+void testPlynnyRuchLewe() {
+    int kierunek = -5;
+    int pozycja = 2000; //do przodu pelna moc
+    while (1) {
+        pozycja += kierunek;
+        naped->ruchUs(LEWE, pozycja);
+        Serial.print("Lewe us :"); Serial.println(pozycja);
+        delay(200);
+        if (pozycja == 995) kierunek = 5;
+        if (pozycja == 2005) kierunek = -5;
+    };
+}
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
 void setup() {
     Serial.begin(115200);
     while (!Serial) continue;
     delay(200);
-    Serial.println("Test klasy YtesNaped : 1.04");
-    Serial.println("Symulacja polecen od apki.");
+    Serial.println("Test klasy YtesNaped : 1.05");
+    Serial.println("Symulacja polecen od apki + radar.");
+    radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 2000, SERWO_RADAR_PIN); //2000->4000(wartoœæ domyœlna)
     naped = new YtesNaped();
+    naped->dodajRadar(radar);
+    naped->wlaczObslugeRadaru(); //zalaczenie blokady ruchu
+
+    Serial.println(naped->odpowiedz());
     //naped->ruchTyl();
     //delay(400); //300-400 od tego trzeba zaczac - czas impulsu
     //naped->ruchStop();
 
     //testZlozony();
 
+    //testRuchLewe();
+    //testRuchPrawe();
+    //testPlynnyRuchLewe();
+
 }
-
-
-
+//--------------------------------------------------------------------------------
 void loop() {
-    if (millis() > msStop) {
-        //symulacjaPetliBluetooth();
-        msStop = millis() + 300L + random(100);
-    }
-    
+    radar->mierzDystans();
+    if (millis() > msNastepnyRuch) {
+        msNastepnyRuch = millis() + 300;
+        Serial.printf("Odczyt bezposredni : %.2f \n", radar->dystans());
+        //naped->ruchPrzod();
+    };
+
     naped->zatrzymaj();
-   
-}
+};

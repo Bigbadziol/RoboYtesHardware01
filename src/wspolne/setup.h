@@ -30,8 +30,8 @@ SoftwareSerial serialLewy(SERIAL2_LEWY_RX, SERIAL2_LEWY_TX); // RX, TX
 SoftwareSerial serialPrawy(SERIAL1_PRAWY_RX, SERIAL1_PRAWY_TX); // RX, TX
 #endif // UZYJ_HARDWARE == 1
 
-#define LEWE_KOLO_PIN 0		// domyslnie 4
-#define PRAWE_KOLO_PIN 4	// domyslni 2 - dziala poprawnie
+#define LEWE_KOLO_PIN 12		// Domyslnie: 0 
+#define PRAWE_KOLO_PIN 4	// Domyslnie: 4
 #define SERWO_RADAR_PIN 2	// serwo radau
 
 MPU6050 mpu(Wire);

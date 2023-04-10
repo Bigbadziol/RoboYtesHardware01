@@ -26,5 +26,6 @@
     <Text Include="przemyslenia_pakiety.txt" />
     <Text Include="notatki.txt" />
     <Text Include="zmiany_w_ArduinoJson_usuniecie_getMember.txt" />
+    <Text Include="warto_pamietac.txt" />
   </ItemGroup>
 </Project>

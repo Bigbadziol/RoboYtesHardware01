@@ -1,0 +1,36 @@
+
+const uint16_t numChars = 512;
+char receivedChars[numChars];
+boolean newData = false;
+static uint16_t ndx = 0;
+char endMarker = '\n';
+char rc;
+
+
+void recvWithEndMarker() {
+
+    while (bt.available() > 0 && newData == false) {
+        rc = bt.read();
+
+        if (rc != endMarker) {
+            receivedChars[ndx] = rc;
+            ndx++;
+            if (ndx >= numChars) {
+                ndx = numChars - 1;
+            }
+        }
+        else {
+            receivedChars[ndx] = '\0'; // terminate the string
+            ndx = 0;
+            newData = true;
+        }
+    }
+}
+
+void showNewData() {
+    if (newData == true) {
+        Serial.print("Dane :  ");
+        Serial.println(receivedChars);
+        newData = false;
+    }
+};
