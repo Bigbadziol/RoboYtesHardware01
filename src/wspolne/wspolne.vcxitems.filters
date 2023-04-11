@@ -12,6 +12,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)YtesZyroskop.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)YtesRadar.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)YtesLed.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)YtesAudioPolecenie.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)BdlBluetoothSerial.h" />
@@ -23,5 +24,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesRadar.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesLed.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)YtesWSled.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)YtesAudioPolecenie.h" />
   </ItemGroup>
 </Project>

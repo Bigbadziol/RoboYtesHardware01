@@ -7,8 +7,15 @@
 
 class YtesRadar {
 private:
-	Servo serwoRadar;
+	unsigned long _msKrok = 50;
+	unsigned long _msNastepnyKrok;
+	int _ruch180zapamietanyKat;	  //
+	int _ruch180aktualnyKat;	  //	
+	int _ruch180kierunek; // -1 lub 1  ,-1 - zacznij d¹¿yæ do 0
+	int _ruch180wykonuj = false;
 
+	int aktualnyKat; //aktualnie ustawiony kat radaru;
+	Servo serwoRadar;
 	int pinTrigger;
 	int pinEcho;
 	int zasiegMin = 20;		//w mm minimalna mierzalna odleg³oœæ dla czujnika
@@ -24,8 +31,14 @@ public:
 	~YtesRadar();
 
 	void ustawRadar(int kat); // przyjmowane 
+	int pobierzKat();
 	void mierzDystans();
 	float dystans();
+	void obslozPolecenieDane(JsonObject* dane);
+	String odpowiedz();
+	void ruch180Inicjuj(int katKoncowy);
+	void ruch180Krok();
+
 };
 //-----------------KONSTRUKTOR , DESTRUKTOR, PRYWATNE ----------------------------
 /**
@@ -40,6 +53,10 @@ YtesRadar::YtesRadar(int triggerPin, int echoPin, int min, int max, int radarPin
 	zasiegMax = max;
 	serwoRadar.attach(radarPin, Servo::CHANNEL_NOT_ATTACHED, 0, 180, 500, 2400);	
 	RADAR_INFO("[radar] serwo zalaczone");	
+	aktualnyKat = 90;
+	_ruch180zapamietanyKat = aktualnyKat;
+	ustawRadar(aktualnyKat);
+	RADAR_INFO("[radar] ustawiony na 90 st.");
 };
 
 /**
@@ -89,10 +106,16 @@ void YtesRadar::ustawRadar(int kat) {
 	if (_kat < 0) kat = 90;
 	if (_kat > 180) kat = 90;
 	_kat = 180 - _kat;
+	aktualnyKat = _kat;
 	serwoRadar.write(_kat);
 };
 
-
+/**
+* @brief Pobierz aktualny k¹t ustawienia radaru
+*/
+int YtesRadar::pobierzKat() {
+	return aktualnyKat;
+};
 
 /*
 * @brief Oszacuj odleg³oœæ do przeszkody w cm. Wartoœæ tego pomiaru stanowi bazê dla dzia³ania pozosta³ych
@@ -121,5 +144,77 @@ float YtesRadar::dystans() {
 	return _ostatniPomiar;
 };
 
+/**
+* "RUCH180" - 0..180 , bazowy k¹t od którego przeprowadziæ demonstracjê
+* "KAT" - 0..180 , ustaw radar na wskazany k¹t
+*/
+void YtesRadar::obslozPolecenieDane(JsonObject* dane) {
+	JsonVariant vRuch180 = (*dane)["RUCH180"];
+	if (!vRuch180.isNull()) {
+		JsonVariant vStart = (*dane)["RUCH180"]["STARTKAT"];
+		JsonVariant vWykonaj = (*dane)["RUCH180"]["WYKONAJ"];
+		if (!vStart.isNull() && !vWykonaj.isNull()) {
+			int start = vStart.as<int>();
+			int wykonaj = vWykonaj.as<int>();
+			if (wykonaj == 1) ruch180Inicjuj(start);
+		};
+	};
+
+	JsonVariant vKat = (*dane)["KAT"];
+	if (!vKat.isNull()) {
+		int nowyKat = vKat.as<int>();
+		ustawRadar(nowyKat);
+	};
+};
+
+/*
+* Przeœlij aktualne ustawienia radaru
+*/
+String YtesRadar::odpowiedz() {
+	StaticJsonDocument<256> doc;
+	JsonObject objData = doc.createNestedObject("radar");
+	objData["KAT"] = (byte)aktualnyKat;
+	JsonObject objRuch180 = objData.createNestedObject("RUCH180");
+	objRuch180["STARTKAT"] = _ruch180zapamietanyKat;
+	objRuch180["WYKONAJ"] = (byte)_ruch180wykonuj;
+	String tmp = "";
+	size_t resSize = serializeJson(doc, tmp);
+
+	int firstIndex = tmp.indexOf('{');
+	int lastIndex = tmp.lastIndexOf('}');
+	String odp = tmp.substring(firstIndex + 1, lastIndex);
+	return odp;
+};
+
+/**
+* @brief Inicjalizacja dla demonstracji , pelny ruch od 0 do 180 i powrot do kata bazowego
+*/
+void YtesRadar::ruch180Inicjuj(int katKoncowy) {
+	_ruch180zapamietanyKat = katKoncowy;
+	_ruch180aktualnyKat = katKoncowy;
+	_ruch180wykonuj = true;
+	_ruch180kierunek = -1;
+	_msNastepnyKrok = millis();
+	ustawRadar(katKoncowy);
+};
+
+/**
+* @brief wykonaj kolejny krok dla demonstracji
+*/
+void YtesRadar::ruch180Krok() {
+	if (_ruch180wykonuj == true) {
+		if (millis() > _msNastepnyKrok) {
+			_msNastepnyKrok = millis() + _msKrok;
+			if (_ruch180aktualnyKat == 0) _ruch180kierunek = 1;
+			if (_ruch180aktualnyKat == 180) {
+				ustawRadar(_ruch180zapamietanyKat);
+				_ruch180wykonuj = false;
+				return;
+			}
+			_ruch180aktualnyKat = _ruch180aktualnyKat + _ruch180kierunek;
+			ustawRadar(_ruch180aktualnyKat);
+		};
+	};
+};
 
 #endif

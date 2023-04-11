@@ -103,6 +103,8 @@ String pelnaOdpowiedz() {
     ret.concat(audio->odpowiedz());
     ret.concat(",");
     ret.concat(ledy->odpowiedz());
+    ret.concat(",");
+    ret.concat(radar->odpowiedz());
     ret.concat("}");
     ret.concat("#$!#"); // ten znacznik rozpoznaje appka , jest to informacja o koncu bloku danych
     return ret;
@@ -110,8 +112,7 @@ String pelnaOdpowiedz() {
 //--------------------------------------------------------------------------------------------
 void stanNiePolaczony() {
     ledy->wzorNiePolaczony();
-    audio->grajEfektPowitalny();
-    delay(1000);
+    audio->grajEfekt(0); //zatrzymaj jesli cos gra
     audio->grajMuzykePowitalna();
 };
 //--------------------------------------------------------------------------------------------
@@ -151,22 +152,27 @@ void setup() {
 #endif 
 
     PD_INFO("-----------------------------------------------------");
-    PD_INFO("RoboYtesHardware 1.13");
-    PD_INFO("Zmiana sposobu pobierania danych , przez buforowanie.");
-    PD_INFO("Komenda PAPA");
+    PD_INFO("RoboYtesHardware 1.15");
+    PD_INFO("Spore zmiany w YtesAudio");
+    PD_INFO("--");
 
 
     bt.onAuthComplete(AuthCompleteCallback);
     bt.setPin(pinUrzadzenia);
     bt.begin(nazwaUrzadzenia, false); //Bluetooth device name
-    Serial.print("Urzadzenie : "); Serial.println(nazwaUrzadzenia);
-    Serial.print("Pin :"); Serial.println(pinUrzadzenia);
-    Serial.print("Mac : "); Serial.println(mojMac().c_str());
+    PD_INFO_V("Urzadzenie:", nazwaUrzadzenia);
+    //Serial.print("Urzadzenie : "); Serial.println(nazwaUrzadzenia);
+    //Serial.print("Pin :"); Serial.println(pinUrzadzenia);
+    PD_INFO_V("Pin:", pinUrzadzenia);
+    //Serial.print("Mac : "); Serial.println(mojMac().c_str());
+    PD_INFO_S("Mac:", mojMac());
 
-    Serial.println("Robot gotowy do parowania");
+    PD_INFO("Robot gotowy do parowania.");
+    
 
     ledy = new YtesWSled();
     radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 2000, SERWO_RADAR_PIN); //2000->4000(wartoœæ domyœlna)
+
     zyroskop = new YtesZyroskop(&mpu, 100); // 0 - kazdy przebieg petli , wiêksza wartoœæ - co okreœlony czas w ms.
     
     naped = new YtesNaped();
@@ -178,6 +184,8 @@ void setup() {
     audio->dodajRadar(radar);
     audio->uwzglednijZyroskop = false;
     audio->uwzglednijRadar = false;
+    audio->ustawTor(CENZURA);
+    audio->ustawTrybAudio(NORMALNY);
 
     stanNiePolaczony(); //Oswietlenie utwor - przed po³¹czeniem z aplikacj¹
 
@@ -195,6 +203,7 @@ void setup() {
 void loop() {
     //---------------------Odczyt radar -  zasieg---------------------------------------
     radar->mierzDystans();
+    radar->ruch180Krok();
 /*
     if (millis() > msRadarOdczytTest) {
         msRadarOdczytTest = millis() + 1000;
@@ -278,6 +287,13 @@ void loop() {
                 PD_INFO("[ROBOT]-> obiekt ledy.");
                 JsonObject daneLedy = vLedy.as<JsonObject>();
                 ledy->obslozPolecenieDane(&daneLedy);
+            };
+            //polecenie dla modulu 'radar'
+            JsonVariant vRadar = thisData["radar"];
+            if (!vRadar.isNull()) {
+                PD_INFO("[ROBOT]-> obiekt radar.");
+                JsonObject daneRadar = vRadar.as<JsonObject>();
+                radar->obslozPolecenieDane(&daneRadar);
             };
 
         };

@@ -110,51 +110,56 @@ void setup() {
     Serial.println("Odpowiedz ustawienia bazowe :");
     Serial.println(odpowiedz.c_str());
 
-    audio->ustawTor(BEZ_CENZURY);
-    audio->ustawTrybAudio(WYCISZANIE);
+    audio->ustawTor(CENZURA);
+    audio->ustawTrybAudio(NORMALNY);
     delay(350);
 
-    //audio->graj(LEWY, MUZYKA, 2);
-    //testy :  graj muzyke 2 , obliczony index 10 , slysze bodies
-    
-    //audio->graj(LEWY, MUZYKA, 2); //gra muze , gra dzwieki.
-    audio->graj(PRAWY, MUZYKA, 2);
-    
-    //audio->grajMuzyke(2);
-    //audio->grajEfekt(8);
 
+    audio->grajMuzykePowitalna();
+    delay(15000);
+
+    //audio->grajSdIndex(PRAWY,1);
+    audio->grajMuzyke(1);
+    Serial.printf("Obliczony index : %d \n", audio->indexDlaMuzyki(1));
+    Serial.printf("Index w katalogu: %d \n", audio->indexMuzykaKatalog());
+
+    
 
 #if UZYJ_HARDWARE == 0      //Tylko dla SoftwareSerial
     serialLewy.listen();
 #endif
-    
+    delay(10000);
 };
 //-------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------
 void loop() {
     msTeraz = millis();
-
+/*
     //Losowe efekty dzwiekowe , dla roznych trybow ustawienia obiektu audio
     if (millis() - timerPrawy > 8000) {
         timerPrawy = millis();
-       losowyEfektDzwiekowy(5);
+       losowyEfektDzwiekowy(34);
     };
+*/
 
-/*
       //------------------------------------------------------------------------------------------------
       //Kolejne utwory z karty SD
       //Uwaga mp3Player - indexuje nagrania w swoj unikalny pojebany sposob, nie zawsze s¹ to indexy narasataj¹co
       //w rozumieniu : kat 01/5 utworow to w kat 02/ zaczynamy od 6. Aby bylo zabawniej w zale¿noœci od typu scalaka
       //(mamy w ofercie bodaj 7 roznych) indexowanie moze wygladac zupelnie inaczej. Sport dla masochistow.
       //------------------------------------------------------------------------------------------------
+
       if (millis() - timerPrawy > 5000) {
           timerPrawy = millis();
-          bool gram = audio->playerPrawy.isPlaying();
-          Serial.printf(" PRAWY : Aktualnie odtwarzam :%d \n",gram);
+          //bool gram = audio->playerPrawy.isPlaying();
+          int index = audio->playerPrawy.currentSdTrack();
+          //Serial.printf("PRAWY : Aktualnie odtwarzam :%d \n",gram);
+          Serial.printf("PRAWY : Aktualny index : %d\n", index);
           Serial.println("PRAWY : Nastepne nagranie.");
-          audio->playerPrawy.playNext();
+//          audio->playerPrawy.playNext();
       }
-
+/*
+      //subtelna roznica !!
       if (millis() - timerLewy > 5000) {
           timerLewy = millis();
           bool gram = audio->playerLewy.isPlaying();

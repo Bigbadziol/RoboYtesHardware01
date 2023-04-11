@@ -4,7 +4,7 @@
 
 class YtesWSled {
 private:
-	CRGB _ustawionyKolor = CRGB(0, 255, 128);
+	CRGB _ustawionyKolor = CRGB(255, 0, 0);
 	CRGB ledy[NUM_LEDS];
 public:
 	boolean saWlaczone = true;
