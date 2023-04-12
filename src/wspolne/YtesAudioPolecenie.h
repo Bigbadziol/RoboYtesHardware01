@@ -17,6 +17,7 @@ typedef struct sAudioPolecenie {
 	//40-zapetlij po indexie sd nagranie : param 1..n ->player.loop(param1)
 	//50-palzuj , param1 , param2 - bez znaczenia , dla pozadku 0 -> player.pause();
 	//60-wznow , param1, param2 - bez znaczenia , dla pozadku 0 -> player.resume();
+	//70-stop , param1 , param2 - bez znaczenia , dla pozadku 0 -> player.stop();
 
 	int param1;
 	int param2;
@@ -39,7 +40,7 @@ private:
 public:
 	String polecenieId = "";
 	int wartoscParametru = 0;
-	YtesAudioPolecenie(DFPlayerMini_Fast* pPlayer, String identyfikatorUrzadzenia);
+	YtesAudioPolecenie(DFPlayerMini_Fast* pPlayer, String identyfikatorUrzadzenia, int opoznieniePolecen);
 	~YtesAudioPolecenie();
 
 	boolean dodaj(int cmd, int param1, int param2);
@@ -51,7 +52,7 @@ public:
 	void obsluzPolecenia();
 };
 
-YtesAudioPolecenie::YtesAudioPolecenie(DFPlayerMini_Fast* pPlayer, String identyfikatorUrzadzenia) {
+YtesAudioPolecenie::YtesAudioPolecenie(DFPlayerMini_Fast* pPlayer, String identyfikatorUrzadzenia,  int opoznieniePolecen) {
 	error = (sAudioPolecenie*)malloc(sizeof(sAudioPolecenie_t));
 	error->cmd = -1;
 	error->param1 = 0;
@@ -59,6 +60,7 @@ YtesAudioPolecenie::YtesAudioPolecenie(DFPlayerMini_Fast* pPlayer, String identy
 	error->next = NULL;
 	player = pPlayer;
 	identyfikator = identyfikatorUrzadzenia;
+	msCzekaj = opoznieniePolecen;
 };
 
 /**
@@ -191,11 +193,6 @@ void YtesAudioPolecenie::pokaz() {
 * @brief Na podstwie parametru cmd (10 - volume , 20 - playFolder , 30 - repeatFolder, 40-loop , 50-pause , 60-resume)
 * wykonywane jest najstarsze polecenie. Po wykonaniu polecenie zostanie usuniête z listy.
 */
-
-//40-zapetlij po indexie sd nagranie : param 1..n ->player.loop(param1)
-//50-palzuj , param1 , param2 - bez znaczenia , dla pozadku 0 -> player.pause();
-//60-wznow , param1, param2 - bez znaczenia , dla pozadku 0 -> player.resume();
-
 void YtesAudioPolecenie::obsluzPierwsze() {
 	if (_size == 0) return;
 	sAudioPolecenie_t polecenie = pobierz(0);
@@ -211,23 +208,28 @@ void YtesAudioPolecenie::obsluzPierwsze() {
 			player->playFolder((uint8_t)polecenie.param1, (uint8_t)polecenie.param2);
 			break;
 		case 30:
-			PD_INFO_VV("[ListaPolecen](obluz ostatnie) -> repeat folder : ", polecenie.param1,identyfikator.c_str());
+			PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> repeat folder : ", polecenie.param1,identyfikator.c_str());
 			player->repeatFolder(polecenie.param1);
 			break;
 		case 40:			
-			PD_INFO_VV("[ListaPolecen](obluz ostatnie) -> loop : ", polecenie.param1, identyfikator.c_str());
+			PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> loop : ", polecenie.param1, identyfikator.c_str());
 			player->loop(polecenie.param1);
 			break;
 		case 50:
-			PD_INFO_S("[ListaPolecen](obluz ostatnie)-> pause , ", identyfikator);
+			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> pause , ", identyfikator);
 			player->pause();
 			break;
 		case 60:
-			PD_INFO_S("[ListaPolecen](obluz ostatnie)-> resume , ", identyfikator);
+			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> resume , ", identyfikator);
 			player->resume();
 			break;
+		case 70:
+			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> stop , ", identyfikator);
+			player->stop();
+			break;
 		default:
-			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> nieznane polecenie.",identyfikator);
+			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> nieznane polecenie , ",identyfikator);
+			PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> nieznane polecenie, param1 : ", polecenie.cmd, (uint8_t)polecenie.param1);
 			break;
 		};
 		usun(0);

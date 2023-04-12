@@ -170,8 +170,7 @@ private:
 	float _odlegloscRadarBlisko = 20.0f; // jeœli odleg³oœæ jest mniejsza od wskazanej, graj efekt dŸwiêkowy dla grupy RADAR_BLISKO
 
 	void _YtesAudio(); // wspolny kod dla konstruktorow (SoftwareSerial / HardwareSerial);
-	void wyciszMuzyke();		//metoda pomocnicza do trybu WYCISZANIE
-	void podglosnijMuzyke();	//metoda pomocnicza do trybu WYCISZANIE
+
 
 public:
 	DFPlayerMini_Fast playerLewy; //po testach do private;
@@ -225,10 +224,9 @@ void YtesAudio::_YtesAudio() {
 	AUDIO_INFO("[Audio konstruktor] -> stop granie");
 	delay(polecenieOpoznienie);
 	playerLewy.stop();
-	delay(polecenieOpoznienie);
-	//playerLewy.playbackSource(TF);
-	//delay(polecenieOpoznienie); //wazny delay - zgodny z th
+
 	AUDIO_INFO("[Audio konstruktor] -> ustawienie glosnosci");
+	delay(polecenieOpoznienie);
 	playerLewy.volume(glosnoscLewy);
 	delay(polecenieOpoznienie);
 
@@ -240,21 +238,20 @@ void YtesAudio::_YtesAudio() {
 	AUDIO_INFO("[Audio konstruktor] -> stop granie");
 	delay(polecenieOpoznienie);
 	playerPrawy.stop();
-	delay(polecenieOpoznienie);
-	//playerLewy.playbackSource(TF);
-	//delay(polecenieOpoznienie);
+
 	AUDIO_INFO("[Audio konstruktor] -> ustawienie glosnosci");
+	delay(polecenieOpoznienie);
 	playerPrawy.volume(glosnoscPrawy); //wazny delay - zgodny z th
 	delay(polecenieOpoznienie);
 	//....
 	msOstatniAutoEfekt = millis() +msPrzerwaEfektyBaza + random(msPrzerwaEfektyLos);
 
-	poleceniaLewy = new YtesAudioPolecenie(&playerLewy, "LEWY");
-	poleceniaPrawy = new YtesAudioPolecenie(&playerPrawy, "PRAWY");
+	poleceniaLewy = new YtesAudioPolecenie(&playerLewy, "LEWY", polecenieOpoznienie);
+	poleceniaPrawy = new YtesAudioPolecenie(&playerPrawy, "PRAWY", polecenieOpoznienie);
 };
 
 #if UZYJ_HARDWARE == 1
-YtesAudio::YtesAudio(HardwareSerial* serialportLewego, HardwareSerial* serialportPrawego, int czasOpoznieniaPolecenia , YtesZyroskop* zyro) {
+YtesAudio::YtesAudio(HardwareSerial* serialportLewego, HardwareSerial* serialportPrawego, int czasOpoznieniaPolecenia ) {
 	portLewy = serialportLewego;
 	portPrawy = serialportPrawego;
 	polecenieOpoznienie = czasOpoznieniaPolecenia;
@@ -277,6 +274,8 @@ YtesAudio::~YtesAudio() {
 	playerPrawy.stop();
 	serialLewy.end();
 	serialPrawy.end();
+	delete poleceniaLewy;
+	delete poleceniaLewy;
 };
 
 /**
@@ -305,27 +304,6 @@ void YtesAudio::dodajZyroskop(YtesZyroskop* pZyroskop) {
 */
 void YtesAudio::dodajRadar(YtesRadar* pRadar) {
 	radar = pRadar;
-};
-
-/**
-* @brief Wycisz muzyke
-* TODO : po testach do private
-*/
-void YtesAudio::wyciszMuzyke() {
-	muzykaPrzedWyciszeniem = glosnoscLewy;
-	int nowaGlosnosc = muzykaPrzedWyciszeniem - poziomWyciszenia;
-	if (nowaGlosnosc < 0) nowaGlosnosc = 0;
-	AUDIO_INFO_V("[audio](wyciszenie) nowa glosnosc : ", nowaGlosnosc);
-	playerPrawy.volume(nowaGlosnosc);													///
-};
-
-/**
-* @brief Podg³oœnij muzyke
-* TODO: po  testach do private
-*/
-void YtesAudio::podglosnijMuzyke() {
-	AUDIO_INFO_V("[audio](wyciszenie) powracam do poziomu glosnosci : ", muzykaPrzedWyciszeniem);
-	playerPrawy.volume(muzykaPrzedWyciszeniem);
 };
 
 /**
@@ -438,8 +416,10 @@ int YtesAudio::wezPoziomWyciszenia() {
 };
 
 /**
-* @brief Metoda z za³o¿enia ustawiona raz w configu. , Uwaga ! wartoœæ nrNagrania == 0 spowoduje odgrywanie 
+* @brief Uwaga! teraz metoda doklada polecenie repeatFolder lub playFolder do listy polecen.
+* Wywolanie metody nie spowoduje odegrania utworu, musi byc wywolanie audioHandler w pêtli programu.
 * utworów po kolei
+* Polecenie KOLEJKOWANE
 */
 void YtesAudio::grajMuzyke(int nrNagrania) {
 	int wartosc = nrNagrania;
@@ -448,133 +428,68 @@ void YtesAudio::grajMuzyke(int nrNagrania) {
 	_PO = wartosc; // tymczasowe obejœcie problemu z indexowaniem utworów
 	if (wartosc == 0) {
 		AUDIO_INFO_V("Zapetlam katalog z muzyka :", katMuzyka);
-		playerPrawy.repeatFolder(katMuzyka);
-/*
-//brak synchronicznego grania pomiêdzy kana³ami (ró¿ne scalaki)
-		if (tryb == STEREO_MUZYKA) {
-			playerLewy.repeatFolder(katMuzyka);
-		};
-*/
+///		playerPrawy.repeatFolder(katMuzyka);
+		poleceniaPrawy->dodaj(30, katMuzyka, 0); //repeat folder
 		return;
 	};
 
-	AUDIO_INFO_V("Gram muzyke :", wartosc);
-	switch (tryb) {
-	case NORMALNY:
-		playerPrawy.playFolder(katMuzyka, wartosc);
+	//AUDIO_INFO_V("Gram muzyke :", wartosc);
+///		playerPrawy.playFolder(katMuzyka, wartosc);
 		//playerPrawy.loop(indexDlaMuzyki(nrNagrania));
-		break;
-/*
-//brak synchronicznego grania pomiêdzy kana³ami (ró¿ne scalaki)
-	case STEREO_MUZYKA:
-		playerPrawy.playFolder(katMuzyka, wartosc);
-		playerLewy.playFolder(katMuzyka, wartosc);
-		//playerPrawy.loop(indexDlaMuzyki(nrNagrania));
-		//playerLewy.loop(indexDlaMuzyki(nrNagrania));
-		break;
-	case STEREO_EFEKTY:
-		//nic nie robimy
-		break;
-*/
-	case WYCISZANIE:
-		//zmianê g³oœnoœci tego kana³u powoduje metoda grajEfekt();
-		// powrot do poprzedniej wartosci zapewnia audioHandler();
-		playerPrawy.playFolder(katMuzyka, wartosc);
-		//playerPrawy.loop(indexDlaMuzyki(nrNagrania));
-		break;
-	case PALZOWANIE:
-		//zmianê g³oœnoœci tego kana³u powoduje metoda grajEfekt();
-		//powrot do poprzedniej wartosci zapewnia audioHandler();
-		playerPrawy.playFolder(katMuzyka, wartosc);
-		//playerPrawy.loop(indexDlaMuzyki(nrNagrania));
-		break;
-	default:
-		break;
-	};
+	poleceniaPrawy->dodaj(20, katMuzyka, wartosc);
 };
 
 /**
 * @brief Metoda w za³o¿eniu wyko¿ystywana przez samego robota. Efekt odgrywany na podniesienie, uderzenie , itp.
 * Metoda mo¿e modyfikowaæ g³oœnoœc kana³u prawego(muzyka) z wzglêdu na ustawienie trybu audio.
 * Podanie parametru 0 , powoduje zatrzymanie grania efektu.
+* Uwaga! metoda dodaje teraz polecenie do listy poleceñ dla kana³u. Aby odegraæ nale¿y w pêtli g³ównej wywo³aæ audioHandler.
+* Polecenie KOLEJKOWANE
 */
 void YtesAudio::grajEfekt(int nrNagrania) {
 	int wartosc = nrNagrania;
 	if (wartosc < 0) wartosc = 0;
 	if (wartosc > iloscEfektow) wartosc = 0;
 	if (wartosc == 0) {
-		playerLewy.stop();
+///		playerLewy.stop();
+		poleceniaLewy->dodaj(70, 0, 0); //stop
 		return;
 	}
-	AUDIO_INFO_V("Gram efekt:", wartosc);
+	//AUDIO_INFO_V("Gram efekt:", wartosc);
 	switch (tryb) {
 	case NORMALNY:
-		playerLewy.playFolder(katEfekty, wartosc);
+///		playerLewy.playFolder(katEfekty, wartosc);
+		poleceniaLewy->dodaj(20, katEfekty, wartosc);
 		break;
-/*
-	//brak synchronicznego grania pomiêdzy kana³ami (ró¿ne scalaki)
-	case STEREO_MUZYKA:
-		//ignoruj muzyka jest priorytetem
-		break;
-	case STEREO_EFEKTY:
-		playerPrawy.playFolder(katEfekty, wartosc);
-		playerLewy.playFolder(katEfekty, wartosc);
-		break;
-*/
 	case WYCISZANIE:
 		muzykaWyciszona = true;
-		wyciszMuzyke();
-		playerLewy.playFolder(katEfekty, wartosc);
+		muzykaPrzedWyciszeniem = glosnoscPrawy;
+		int nowaGlosnosc;
+		nowaGlosnosc = glosnoscPrawy - poziomWyciszenia;
+		if (nowaGlosnosc < 0) nowaGlosnosc = 0;
+		AUDIO_INFO_V("[audio](grajEfekt) wyciszam muzyke do  : ", nowaGlosnosc);
+///		playerPrawy.volume(nowaGlosnosc);	
+		poleceniaPrawy->dodaj(10, nowaGlosnosc, 0);
+///		playerLewy.playFolder(katEfekty, wartosc);
+		poleceniaLewy->dodaj(20, katEfekty, wartosc);
 		break;
+
 	case PALZOWANIE:
 		muzykaPauza = true;
-		playerPrawy.pause();
-		playerLewy.playFolder(katEfekty, wartosc);
+///		playerPrawy.pause();
+		poleceniaPrawy->dodaj(50, 0, 0);
+///		playerLewy.playFolder(katEfekty, wartosc);
+		poleceniaLewy->dodaj(20, katEfekty, wartosc);
 		break;
 	default:
 		break;
 	};
 };
 
-/*
-* Graj nagranie dla wskazanego kanalu(glosnika). Podanie < 0 spowoduje zatrzymanie nagrania dla 
-* danego kana³u. Przekroczenie zakresow 0..255 , ustawi wartosc na 0
-* 
-* Nadrzêdny bedzie tryb przykladowo GrajMuzyke(jesli  normalny  to tylko lewy glosnik , jesli stereo_muzyka to oba glosniki,
-* jesli stereo_efekt to ignoruj kompletnie
-* //GrajEfekt  
-* //GrajMuzyke
-*/
-void YtesAudio::graj(KANAL kanal, TYP_AUDIO typ, int nrNagrania) {
-	int wartosc = nrNagrania;
-	if (wartosc < 0) wartosc = 0;
-	if (wartosc > 255) wartosc = 0;
-	
-	switch (kanal) {
-	case LEWY:
-		if (wartosc == 0) playerLewy.stop();
-		else {
-			if (typ == MUZYKA) playerLewy.playFolder(katMuzyka, wartosc);
-			else playerLewy.playFolder(katEfekty, wartosc);
-		}
-		AUDIO_INFO_V("Kanal lewy , nagranie nr :",  wartosc);
-		break;
-	case PRAWY:
-		if (wartosc == 0) playerPrawy.stop();
-		else {
-			if (typ == MUZYKA) playerPrawy.playFolder(katMuzyka, wartosc);
-			else playerPrawy.playFolder(katEfekty, wartosc);
-		};
-		AUDIO_INFO_V("Kanal prawy , nagranie nr :", wartosc);
-		break;
-
-	default:
-		break;
-	};
-};
 
 /**
 * @brief Graj nagranie audio na podstawie indexu pliku wzgledem ca³ej karty SD
+* Uwaga ta metoda zapewnia bezposrednie odegranie utworu - polecenie NIE jest kolejkowane.
 */
 void YtesAudio::grajSdIndex(KANAL kanal , int index) {
 	int wartosc = index;
@@ -598,9 +513,12 @@ void YtesAudio::grajSdIndex(KANAL kanal , int index) {
 
 /**
 * @brief Graj utwór powitalny po w³¹czeniu robota. Jeden utwor znajduj¹cy siê w katalogu numer :05
+* Polecenie KOLEJKOWANE
 */
 void YtesAudio::grajMuzykePowitalna() {
-	playerPrawy.playFolder(5, 1);
+	//playerPrawy.playFolder(5, 1);
+///	playerPrawy.repeatFolder(5);
+	poleceniaPrawy->dodaj(30, 5, 0); //repeatFolder 5
 };
 
 /**
@@ -675,12 +593,15 @@ void YtesAudio::audioHandler() {
 			bool lewyGra = playerLewy.isPlaying();
 			AUDIO_INFO_V("[audio] handler -> stan lewy :", lewyGra);
 			if (muzykaWyciszona && !lewyGra) {
-				podglosnijMuzyke(); //metoda sama z siebie generuje informacje 
+				AUDIO_INFO_V("[audio](wyciszenie) powracam do poziomu glosnosci : ", muzykaPrzedWyciszeniem);
+///				playerPrawy.volume(muzykaPrzedWyciszeniem);
+				poleceniaPrawy->dodaj(10, muzykaPrzedWyciszeniem, 0);
 				muzykaWyciszona = false;
 			};
 			if (muzykaPauza && !lewyGra) {
 				AUDIO_INFO("[audio] handler -> odpalzowanie");
-				playerPrawy.resume();
+///				playerPrawy.resume();
+				poleceniaPrawy->dodaj(60, 0, 0); //resume
 				muzykaPauza = false;
 			};
 		};
@@ -738,10 +659,15 @@ void YtesAudio::glosnosc(KANAL kanal, int wartosc) {
 * W przypadku LO,PO - z których katalogów bêd¹  odtwarzane nagrania, decyduje "TOR"
 */
 void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
+	boolean torZmieniony = false;
 
 	JsonVariant vTor = (*dane)["TOR"];
 	if (!vTor.isNull()) {
-		ustawTor((TOR)vTor.as<int>());
+		int nTor = vTor.as<int>();
+		if (nTor != tor) {
+			ustawTor((TOR)vTor.as<int>());
+			torZmieniony = false;
+		};
 	};
 	//tryb : 
 	JsonVariant vTryb = (*dane)["TRYB"];
@@ -753,7 +679,7 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vLG.isNull()) {
 		int lg = vLG.as<int>();
 		if (glosnoscLewy != lg) {
-			//glosnosc(LEWY, lg);
+/// glosnosc(LEWY, lg);
 			poleceniaLewy->dodaj(10, lg, 0);
 			AUDIO_INFO_V("Glosnik lewy , glosnosc ustawiona :", lg);
 		}
@@ -766,7 +692,7 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vPG.isNull()) {
 		int pg = vPG.as<int>();
 		if (glosnoscPrawy != pg) {
-			//glosnosc(PRAWY, pg);
+/// glosnosc(PRAWY, pg);
 			poleceniaPrawy->dodaj(10, pg, 0);
 			AUDIO_INFO_V("Glosnik prawy , glosnosc ustawiona :", pg);
 		}
@@ -785,14 +711,16 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 		int po = vPO.as<int>();
 		if (po != _PO) {
 			_PO = po;
-			//grajMuzyke(po);
+/// grajMuzyke(po);
 			poleceniaPrawy->dodaj(20, katMuzyka, po);
 		};
 	};
 	//Odtwarzany kanal lewy (efekty)
 	JsonVariant vLO = (*dane)["LO"];
 	if (!vLO.isNull()) {
-		grajEfekt(vLO.as<int>());
+		int lo = vLO.as<int>();
+///grajEfekt(vLO.as<int>());
+		poleceniaLewy->dodaj(20, katEfekty, lo);
 	};
 	//Uwzglednij zyroskop
 	JsonVariant vUZ = (*dane)["UZ"];

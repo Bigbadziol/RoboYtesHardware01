@@ -116,15 +116,11 @@ void setup() {
 
 
     audio->grajMuzykePowitalna();
-    delay(15000);
 
-    //audio->grajSdIndex(PRAWY,1);
-    audio->grajMuzyke(1);
     Serial.printf("Obliczony index : %d \n", audio->indexDlaMuzyki(1));
     Serial.printf("Index w katalogu: %d \n", audio->indexMuzykaKatalog());
 
     
-
 #if UZYJ_HARDWARE == 0      //Tylko dla SoftwareSerial
     serialLewy.listen();
 #endif
