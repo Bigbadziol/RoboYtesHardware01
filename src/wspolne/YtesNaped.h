@@ -28,6 +28,8 @@ class YtesNaped {
 		//void zalaczPrawe();
 		boolean poruszamSie = false;
 		void uaktualnijStoper(); // polecenie modyfikuje stan poruszamSie
+		unsigned long msOstatniRuch = 0L; //czas ostatniego wykonania ruchu przez pojazd, domyslnie wartosc przekazywana dalej
+										//do audio
 		//...
 		boolean _autostop = false; //czy mam uniemozliwic blokade przed udezeniem w przeszkode(w oparciu o radar).
 		float _odlegloscStop = 15.0f; // odleg³oœæ wyrazona w cm. Zbli¿enie siê do przeszkody na odleg³oœæ mniejsz¹
@@ -40,7 +42,7 @@ public:
 	void dodajRadar(YtesRadar* pRadar);
 
 	// Polecenia dla kol na zasadzie : raz nadany kierunek kontynuowany jest a¿ do nadejœcia kolejnego polecenia.
-	// polecenia nie modyfikuj¹ zmiennej poruszamSie.
+	// polecenia nie modyfikuj¹ zmiennej poruszamSie oraz zmiennej msOstatniRuch.
 	void ruchLewePrzod();
 	void ruchLeweTyl();
 	void ruchLeweStop();
@@ -75,6 +77,7 @@ public:
 
 	void obslozPolecenieDane(JsonObject* dane); //obsluga samego obiektu.
 	String odpowiedz();
+	unsigned long ostatniRuch() { return msOstatniRuch; }; //czas faktycznie wykonanego ruchu przez pojazd
 };
 
 /**
@@ -189,6 +192,7 @@ void YtesNaped::ruchPraweStop() {
 */
 void YtesNaped::ruchPrzod() {
 	if (!blokujRuchDoPrzodu()) {
+		msOstatniRuch = millis();
 		uaktualnijStoper();
 		ruchLewePrzod();
 		ruchPrawePrzod();
@@ -199,6 +203,7 @@ void YtesNaped::ruchPrzod() {
 *  @brief Logiczny ruch pojazdu do ty³u. Serwo prawe krêci siê w przeciwnym ruchu do serwa lewego.
 */
 void YtesNaped::ruchTyl() {
+	msOstatniRuch = millis();
 	uaktualnijStoper();
 	ruchLeweTyl();
 	ruchPraweTyl();
@@ -220,6 +225,7 @@ void YtesNaped::ruchStop() {
 */
 void YtesNaped::ruchPrawoPrzod() {
 	if (!blokujRuchDoPrzodu()) {
+		msOstatniRuch = millis();
 		uaktualnijStoper();
 		ruchPraweStop();
 		ruchLewePrzod();
@@ -233,6 +239,7 @@ void YtesNaped::ruchPrawoPrzod() {
 */
 void YtesNaped::ruchLewoPrzod() {
 	if (!blokujRuchDoPrzodu()) {
+		msOstatniRuch = millis();
 		uaktualnijStoper();
 		ruchLeweStop();
 		ruchPrawePrzod();
@@ -244,28 +251,30 @@ void YtesNaped::ruchLewoPrzod() {
 * Prawe ko³o stoi , lewe krêci siê do ty³u
 */
 void YtesNaped::ruchPrawoTyl() {
+	msOstatniRuch = millis();
 	uaktualnijStoper();
 	ruchPraweStop();
 	ruchLeweTyl();
-}
+};
 
 /**
 * @biref Logiczny skrêt ty³em w lewo.
 * Prawe lewe stoi , lewe krêci siê do ty³u
 */
 void YtesNaped::ruchLewoTyl() {
+	msOstatniRuch = millis();
 	uaktualnijStoper();
 	ruchLeweStop();
 	ruchPraweTyl();
-}
+};
 
 /**
 * @brief.Bezposredni zapis sygnalu do wskazanego kola. kolo = LEWE, PRAWE. czasUs 800..2200
 * Wartosc bliska 1500 powinna zatrzymac kolo
 */
-
 void YtesNaped::ruchUs(KOLO kolo, int czasUs) {
 	msTeraz = millis();
+	msOstatniRuch = millis();
 	switch (kolo) {
 	case LEWE:
 		serwoLewe.writeMicroseconds(czasUs);
@@ -275,8 +284,8 @@ void YtesNaped::ruchUs(KOLO kolo, int czasUs) {
 		break;
 	default:
 		break;
-	}
-}
+	};
+};
 
 /**
 * @brief Nadaj ruch pojazdowi steruj¹c jego lewym i prawym ko³em. 
@@ -306,19 +315,19 @@ void  YtesNaped::ruchParametry(int lewe, int prawe) {
 	else if (lewe == 0 && prawe == -1) ruchPrawoTyl();
 	else {
 		NAPED_ERROR("Nie poprawny zestaw parametrow.");
-	}
-}
+	};
+};
+
 /**
 * @brief Metoda do  zatrzymywania ruchu  pojazdu
 */
 void YtesNaped::zatrzymaj() {
-	if ((poruszamSie == true) && (msStop < millis()) ) {
-		ruchStop();
+	if ((poruszamSie == true) && (msStop < millis())) {
 		ruchStop();
 		poruszamSie = false;
 		NAPED_INFO("Zatrzymano pojazd.");
-	}
-}
+	};
+};
 /**
 * @brief Uwzglednij wskazania radaru przed wykonaniem ruchu w kierunkach : prawo-przod,przod, lewo-przod
 * W³¹czenie opcji blokuje mo¿liwoœæ ude¿enia w przeszkodê.
@@ -380,6 +389,7 @@ void YtesNaped::obslozPolecenieDane(JsonObject* dane) {
 		else _autostop = false;
 	};
 };
+
 /**
 * @brief Przygoduj odpowiedz dotyczac¹ ustawieñ modu³u napêd.
 * Obecnie zwracane tylko ustawienie 'autostop'

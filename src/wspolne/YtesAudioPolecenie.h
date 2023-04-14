@@ -196,44 +196,49 @@ void YtesAudioPolecenie::pokaz() {
 void YtesAudioPolecenie::obsluzPierwsze() {
 	if (_size == 0) return;
 	sAudioPolecenie_t polecenie = pobierz(0);
-	if (polecenie.cmd != -1) { //error
-		switch (polecenie.cmd) {
-		case 10:
-			PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> volume : ", (uint8_t)polecenie.param1, identyfikator.c_str());
-			player->volume((uint8_t)polecenie.param1);
-			break;
-		case 20:
-			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> play folder : ",identyfikator);
-			PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> parametry : ", (uint8_t)polecenie.param1, (uint8_t)polecenie.param2);
-			player->playFolder((uint8_t)polecenie.param1, (uint8_t)polecenie.param2);
-			break;
-		case 30:
-			PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> repeat folder : ", polecenie.param1,identyfikator.c_str());
-			player->repeatFolder(polecenie.param1);
-			break;
-		case 40:			
-			PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> loop : ", polecenie.param1, identyfikator.c_str());
-			player->loop(polecenie.param1);
-			break;
-		case 50:
-			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> pause , ", identyfikator);
-			player->pause();
-			break;
-		case 60:
-			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> resume , ", identyfikator);
-			player->resume();
-			break;
-		case 70:
-			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> stop , ", identyfikator);
-			player->stop();
-			break;
-		default:
-			PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> nieznane polecenie , ",identyfikator);
-			PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> nieznane polecenie, param1 : ", polecenie.cmd, (uint8_t)polecenie.param1);
-			break;
-		};
+	if (polecenie.cmd == -1) { //error
 		usun(0);
+		PD_ERROR("ListaPolecen[(obsluz ostatnie) BLAD -> nieznane polecenie!");
+		return;
 	};
+
+	switch (polecenie.cmd) {
+	case 10:
+		PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> volume : ", (uint8_t)polecenie.param1, identyfikator.c_str());
+		player->volume((uint8_t)polecenie.param1);
+		break;
+	case 20:
+		PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> play folder : ",identyfikator);
+		PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> parametry : ", (uint8_t)polecenie.param1, (uint8_t)polecenie.param2);
+		player->playFolder((uint8_t)polecenie.param1, (uint8_t)polecenie.param2);
+		break;
+	case 30:
+		PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> repeat folder : ", polecenie.param1,identyfikator.c_str());
+		player->repeatFolder(polecenie.param1);
+		break;
+	case 40:			
+		PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> loop : ", polecenie.param1, identyfikator.c_str());
+		player->loop(polecenie.param1);
+		break;
+	case 50:
+		PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> pause , ", identyfikator);
+		player->pause();
+		break;
+	case 60:
+		PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> resume , ", identyfikator);
+		player->resume();
+		break;
+	case 70:
+		PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> stop , ", identyfikator);
+		player->stop();
+		break;
+	default:
+		PD_INFO_S("[ListaPolecen](obsluz ostatnie) -> nieznane polecenie , ",identyfikator);
+		PD_INFO_VV("[ListaPolecen](obsluz ostatnie) -> nieznane polecenie, param1 : ", polecenie.cmd, (uint8_t)polecenie.param1);
+		break;
+	};
+	usun(0);
+
 };
 
 /**
@@ -241,8 +246,9 @@ void YtesAudioPolecenie::obsluzPierwsze() {
 * nastêpnie jest ono usuwane z listy.
 */
 void YtesAudioPolecenie::obsluzPolecenia() {
-	if (millis() > msOstatnioWykonane) {
-		msOstatnioWykonane = millis() + msCzekaj;
+	unsigned long msTeraz = millis();
+	if (msTeraz >= msOstatnioWykonane) {
+		msOstatnioWykonane = msTeraz + msCzekaj;
 		obsluzPierwsze();
 	};	
 };

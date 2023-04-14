@@ -12,8 +12,8 @@
 
 #define JSON_INCOMMING_BUFFER	1024	//Maksymalny rozmiar odpowiedzi od apki
 
-#define SERIAL1_PRAWY_RX 14	//34(blad)	//Zmiana z blednego 14!! PODLUTOWAC SIE POD 14(RX) 33(TX)
-#define SERIAL1_PRAWY_TX 33 //33(blad)
+#define SERIAL1_PRAWY_RX 14	
+#define SERIAL1_PRAWY_TX 33 
 #define SERIAL2_LEWY_RX 16
 #define SERIAL2_LEWY_TX 17
 

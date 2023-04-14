@@ -157,6 +157,8 @@ private:
 	int _PO=1; //tymczasowe rozwi¹zanie z powodu problemów z indexowaniem utworów na karcie SD.
 			 // tu przechowujemy wartoœæ numeru nagrania w katalogu aktualnie odtwarzanego utworu muzycznego.
 			 // mo¿na mówiæ raczej o numerze porz¹dkowym w katalogu nie zaœ o unikalnym indexie w kontekscie ca³ej karty SD.
+	//...
+	unsigned long msOstatniRuch = 0L; //czas fizycznie wykonanego ruchu pojazdu
 
 	//efekty na podstawie zyroskopu
 	YtesZyroskop* zyroskop = nullptr;
@@ -211,6 +213,7 @@ public:
 	void obslozPolecenieDane(JsonObject* dane); //obsluga samego obiektu "dane"
 	String odpowiedz();
 
+	void ostatniCzasRuch(unsigned long czas);
 	void audioHandler();
 	void dump(KANAL odtwarzaczSymbol); //L lub P
 };
@@ -625,6 +628,7 @@ TRYB_AUDIO YtesAudio::wezTrybAudio() {
 
 /*
 * @brief Ustaw g³oœnoœæ dla lewego lub prawgo g³oœnika. Metoda sprawdza poprawnosc zakresow 0..30
+* Polecenie NIE kolejkowane, do bezpoœredniego wykonania
 */
 void YtesAudio::glosnosc(KANAL kanal, int wartosc) {
 	int nowaWartosc = wartosc;
