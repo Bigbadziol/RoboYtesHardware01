@@ -1,5 +1,5 @@
 // YtesNaped.h
-// Zgoednie z dokumentacja , dla serwa AR3606HB , zakres impulsow to 800-2200 , pozycja neutralna to 15000
+// Zgoednie z dokumentacja , dla serwa AR3606HB , zakres impulsow to 800-2200 , pozycja neutralna to 1500
 #ifndef _YTESNAPED_h
 #define _YTESNAPED_h
 #include "arduino.h"
@@ -24,13 +24,11 @@ class YtesNaped {
 
 		Servo serwoLewe;
 		Servo serwoPrawe;
-		//void zaloaczLewe();
-		//void zalaczPrawe();
+
 		boolean poruszamSie = false;
 		void uaktualnijStoper(); // polecenie modyfikuje stan poruszamSie
 		unsigned long msOstatniRuch = 0L; //czas ostatniego wykonania ruchu przez pojazd, domyslnie wartosc przekazywana dalej
 										//do audio
-		//...
 		boolean _autostop = false; //czy mam uniemozliwic blokade przed udezeniem w przeszkode(w oparciu o radar).
 		float _odlegloscStop = 15.0f; // odleg³oœæ wyrazona w cm. Zbli¿enie siê do przeszkody na odleg³oœæ mniejsz¹
 									  // zablokuje mo¿liwoœæ wykonania ruchów :prawo-przod,przod,lewo-przod

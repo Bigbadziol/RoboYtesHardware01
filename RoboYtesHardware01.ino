@@ -1,14 +1,4 @@
-/*
-    07.04.23 - ostatecznie 3 g³owne obiekty do obslugi "naped" , "audio", "ledy" - poprawic wszystko w apce.
-    Dodatkowo, "autostop" , tag AUTOSTOP - ma trafic do naped
-    Przetestowaæ  w nastêpuj¹cej kolejnoœci :
-    V- Klasê radar - zmiana sposobu liczenia odleg³oœci i raportowania b³êdu
-    V -Odpowiedz z modu³u naped
-    Ca³kowit¹ odpowiedŸ
-    Blokadê ruchu - dla przekroczonej bezpiecznej odleg³oœci
-    Aplikacja tel - zgodoœæ obiektów przychodz¹cych i wychodz¹cych    
- */          
-
+//15.24.2023-dom
 /*
 * // Uwaga, przyjrzec sie zachowaniu GPIO0 - przyszly radar  , ze wgledu na klod w YtesServo.h moze generowac blad
 * //This is bold text to get your attention, I can make it red as well: It is "\r\n" not "\n\r". <--NA LEDZIKU SPRAWDZIC
@@ -114,13 +104,16 @@ void stanNiePolaczony() {
     ledy->wzorNiePolaczony();
     audio->grajEfekt(0); //zatrzymaj jesli cos gra
     audio->grajMuzykePowitalna();
+    audio->uwzglednijRadar = false;
+    audio->uwzglednijZyroskop = false;
+    audio->ustawSparowanie(false);
 };
 //--------------------------------------------------------------------------------------------
 void stanPolaczony() {
     ledy->wzorPolaczony();
-    audio->grajMuzyke(1);
-    //audio->grajMuzyke(audio->indexMuzykaKatalog()); //utwór ustawiony przez u¿ytkownika
-}
+    audio->ustawSparowanie(true);
+    audio->grajMuzyke(audio->indexMuzykaKatalog()); //utwór ustawiony przez u¿ytkownika
+};
 // --------------- Funkcje testowe -----------------------------------------------------------
 void radarRuch180() {
     for (int i = 0; i <= 180l; i++) {
@@ -152,40 +145,40 @@ void setup() {
 #endif 
 
     PD_INFO("-----------------------------------------------------");
-    PD_INFO("RoboYtesHardware 1.15");
-    PD_INFO("Spore zmiany w YtesAudio");
+    PD_INFO("RoboYtesHardware 1.19");
+    PD_INFO("Bardzo duze zmiany w YtesAudio, YtesAudioPolecenie");
     PD_INFO("--");
-
 
     bt.onAuthComplete(AuthCompleteCallback);
     bt.setPin(pinUrzadzenia);
     bt.begin(nazwaUrzadzenia, false); //Bluetooth device name
     PD_INFO_V("Urzadzenie:", nazwaUrzadzenia);
-    //Serial.print("Urzadzenie : "); Serial.println(nazwaUrzadzenia);
-    //Serial.print("Pin :"); Serial.println(pinUrzadzenia);
     PD_INFO_V("Pin:", pinUrzadzenia);
-    //Serial.print("Mac : "); Serial.println(mojMac().c_str());
     PD_INFO_S("Mac:", mojMac());
-
     PD_INFO("Robot gotowy do parowania.");
     
-
     ledy = new YtesWSled();
-    radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 2000, SERWO_RADAR_PIN); //2000->4000(wartoœæ domyœlna)
+    radar = new YtesRadar(HCSR_TRIG_PIN, HCSR_ECHO_PIN, 20, 2000, SERWO_RADAR_PIN);
 
-    zyroskop = new YtesZyroskop(&mpu, 100); // 0 - kazdy przebieg petli , wiêksza wartoœæ - co okreœlony czas w ms.
+    zyroskop = new YtesZyroskop(&mpu, 100); // 0 - kazdy przebieg petli , wiêksza wartoœæ - pomiar co okreœlony czas w ms.
     
     naped = new YtesNaped();
     naped->dodajRadar(radar);
     naped->wlaczObslugeRadaru(); //uwzglêdnij w poleceniu ruchu , mo¿liwoœæ zablokowania go przez przeszkodê.
 
-    audio = new YtesAudio(&serialLewy, &serialPrawy, 350);
+    audio = new YtesAudio(&serialLewy, &serialPrawy, 500); // UWAGA ! zmiana z 350
     audio->dodajZyroskop(zyroskop);
     audio->dodajRadar(radar);
-    audio->uwzglednijZyroskop = false;
-    audio->uwzglednijRadar = false;
+    audio->dodajNaped(naped);
+
+    audio->uwzglednijNude = true;
+    audio->uwzglednijZyroskop = true;
+    audio->uwzglednijRadar = true;
+    audio->uwzglednijNaped = true;
     audio->ustawTor(CENZURA);
-    audio->ustawTrybAudio(NORMALNY);
+    audio->ustawTrybAudio(WYCISZANIE);
+    audio->ustawCzasNudy(12000L);
+    audio->ustawCzasPrzerwaGadanie(5000L, 5000L);
 
     stanNiePolaczony(); //Oswietlenie utwor - przed po³¹czeniem z aplikacj¹
 
@@ -194,8 +187,8 @@ void setup() {
 #endif
 
    
-    Serial.println("TEST PELNEJ ODPOWIEDZI :");
-    Serial.println(pelnaOdpowiedz());
+    //Serial.println("TEST PELNEJ ODPOWIEDZI :");
+    //Serial.println(pelnaOdpowiedz());
 };
 
 //--------------------------------------------------------------------------------------

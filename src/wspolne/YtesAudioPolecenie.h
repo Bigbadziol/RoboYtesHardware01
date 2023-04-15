@@ -73,7 +73,7 @@ YtesAudioPolecenie::~YtesAudioPolecenie() {
 		head = head->next;
 		free(current);
 	};
-}
+};
 
 /**
 * @brief Dodaj abstrakt polecenia do listy

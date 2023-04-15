@@ -32,7 +32,6 @@ void YtesWSled::ustawKolorRgb(byte r, byte g, byte b) {
 };
 
 void YtesWSled::wzorNiePolaczony() {
-	//fill_gradient_RGB(leds + START_LED, NUM_LEDS - START_LED, COLOR_START, COLOR_END);
 	saWlaczone = true;
 	fill_gradient_RGB(ledy, NUM_LEDS, CRGB::Green, CRGB::Black);
 	FastLED.show();
@@ -62,14 +61,18 @@ void YtesWSled::wlacz() {
 * "WLACZONE" : 1,0 - wlacz lub wylacz ledy
 * "KOLOR" {"R":xxx,"G":xxx,"B":xxx} - ustaw kolor, xxx w zakresie 0..255
 */
-
 void YtesWSled::obslozPolecenieDane(JsonObject* dane) {
 	int intWlaczone = 0;
 
 	JsonVariant vWlaczone = (*dane)["WLACZONE"];
 	if (!vWlaczone.isNull()) {		
 		intWlaczone = vWlaczone.as<int>();
-		if (intWlaczone == 1) saWlaczone = true; else false;
+		if (intWlaczone == 1) {
+			saWlaczone = true;
+		}
+		else {
+			saWlaczone = false;
+		};
 	};
 
 	JsonVariant vKolor = (*dane)["KOLOR"];

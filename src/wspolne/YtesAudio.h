@@ -10,6 +10,7 @@
 #include "YtesAudioPolecenie.h"
 #include "YtesZyroskop.h"
 #include "YtesRadar.h"
+#include "YtesNaped.h"
 
 using namespace dfplayer;
 
@@ -138,8 +139,8 @@ private:
 	};
 
 
-//	DFPlayerMini_Fast playerLewy;
-//	DFPlayerMini_Fast playerPrawy;
+	DFPlayerMini_Fast playerLewy;
+	DFPlayerMini_Fast playerPrawy;
 	YtesAudioPolecenie* poleceniaLewy;
 	YtesAudioPolecenie* poleceniaPrawy;
 
@@ -157,40 +158,52 @@ private:
 	int _PO=1; //tymczasowe rozwi¹zanie z powodu problemów z indexowaniem utworów na karcie SD.
 			 // tu przechowujemy wartoœæ numeru nagrania w katalogu aktualnie odtwarzanego utworu muzycznego.
 			 // mo¿na mówiæ raczej o numerze porz¹dkowym w katalogu nie zaœ o unikalnym indexie w kontekscie ca³ej karty SD.
-	//...
-	unsigned long msOstatniRuch = 0L; //czas fizycznie wykonanego ruchu pojazdu
 
-	//efekty na podstawie zyroskopu
 	YtesZyroskop* zyroskop = nullptr;
-	unsigned long msPrzerwaEfektyBaza = 7000L;//minimalny czas przerwy pomiêdzy odegraniem efektow. Znacznik czasu
-										  // uwzglêdniany tylko i wy³¹cznie dla auto-dzwiêkow na podstawie wskazan zyroskopu.
-	unsigned long msPrzerwaEfektyLos = 5000L; //z tego zakresu bêdzie losowana liczba przed³u¿aj¹ca czas
-	unsigned long msOstatniAutoEfekt = 0L;
-
-	//efekty na podstawie  radaru
 	YtesRadar* radar = nullptr;
-	float _odlegloscRadarBlisko = 20.0f; // jeœli odleg³oœæ jest mniejsza od wskazanej, graj efekt dŸwiêkowy dla grupy RADAR_BLISKO
+	float _odlegloscRadarBlisko = 15.0f; // jeœli odleg³oœæ jest mniejsza od wskazanej, aktywuj efekt dŸwiêkowy dla grupy RADAR_BLISKO
+
+	//efekty na podstawie napêdu
+	YtesNaped* naped = nullptr;
+	
+	//od tego miejsca zdarzenia wp³ywaj¹ce na odgrywanie dzwiêku.
+	//..TODO
+	boolean robotSparowany = false;
+	unsigned long msOstatniRuchNaped = 0L;		// czas fizycznie wykonanego ruchu pojazdu , dane z naped lub uruchomie
+	unsigned long msOstatniPrzyciskEfekt = 0L;	// to uaktualnia obsluzPolecenie dane , dla parametru 'LO' (lewy odtwarzanie) dla przyciskow 1-7 w apce
+	unsigned long msOstatniRuchRadar = 0L;		// ostatni czas zdazenia z radaru przerywajacy nude.
+	unsigned long msNuda = 0L;					// chwila od ktorej sprawdzany jest czas ,czy robot siê nudzi, zdarzenia : ruch , przycisk , radar odœwie¿aja timer
+												// inicjalizowany przez polaczenie
+	unsigned long msNudaCzekaj = 10000L;		// czas oczekiwania na zdarzenie, potem zacznij gadac
+
+	unsigned long msPrzerwaGadanieBaza = 5000L;	// minimalny czas przerwy pomiêdzy odegraniem efektow. Znacznik czasu
+												// uwzglêdniany tylko i wy³¹cznie dla auto-dzwiêkow na podstawie wskazan zyroskopu.
+	unsigned long msPrzerwaGadanieLos = 5000L;	// z tego zakresu bêdzie losowana liczba przed³u¿aj¹ca czas
+	unsigned long msNastepnyAutoEfekt = 0L;		// czas w przyszlosci, kiedy mozna odegrac nastepny efekt
 
 	void _YtesAudio(); // wspolny kod dla konstruktorow (SoftwareSerial / HardwareSerial);
 
 
 public:
-	DFPlayerMini_Fast playerLewy; //po testach do private;
-	DFPlayerMini_Fast playerPrawy;//po testach do private;
-
+	bool uwzglednijNude = false;
 	bool uwzglednijZyroskop = false;
 	bool uwzglednijRadar = false;
+	bool uwzglednijNaped = false;
 
 	int indexDlaMuzyki(int numerNagrania); 
-
 	byte ileEfektowWGrupie(GRUPA_DZWIEKOWA grupa);
 	byte losujZgrupy(GRUPA_DZWIEKOWA grupa);
 	int indexMuzykaKatalog() { return _PO; }; //Obejœcie : który utwór jest ustawiony do grania,z wzglêdu na tor
 
 	YtesAudio(SoftwareSerial* serialportLewego, SoftwareSerial* serialportPrawego,int czasOpoznieniaPolecenia);
 	~YtesAudio();
+
 	void dodajZyroskop(YtesZyroskop* pZyroskop);
 	void dodajRadar(YtesRadar* pRadar);
+	void dodajNaped(YtesNaped* pNaped);
+	void ustawSparowanie(boolean czySparowany) { robotSparowany = czySparowany; };
+	void ustawCzasNudy(unsigned long znacznikCzasu) { msNudaCzekaj = znacznikCzasu; };
+	void ustawCzasPrzerwaGadanie(unsigned long czasBazowy, unsigned long czasLosowy) { msPrzerwaGadanieBaza = czasBazowy; msPrzerwaGadanieLos = czasLosowy; };
 	
 	void ustawTrybAudio(TRYB_AUDIO nowyTryb);
 	TRYB_AUDIO wezTrybAudio();
@@ -213,7 +226,6 @@ public:
 	void obslozPolecenieDane(JsonObject* dane); //obsluga samego obiektu "dane"
 	String odpowiedz();
 
-	void ostatniCzasRuch(unsigned long czas);
 	void audioHandler();
 	void dump(KANAL odtwarzaczSymbol); //L lub P
 };
@@ -247,8 +259,8 @@ void YtesAudio::_YtesAudio() {
 	playerPrawy.volume(glosnoscPrawy); //wazny delay - zgodny z th
 	delay(polecenieOpoznienie);
 	//....
-	msOstatniAutoEfekt = millis() +msPrzerwaEfektyBaza + random(msPrzerwaEfektyLos);
-
+	msNastepnyAutoEfekt = millis() +msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
+	msNuda = millis() + msNudaCzekaj;
 	poleceniaLewy = new YtesAudioPolecenie(&playerLewy, "LEWY", polecenieOpoznienie);
 	poleceniaPrawy = new YtesAudioPolecenie(&playerPrawy, "PRAWY", polecenieOpoznienie);
 };
@@ -307,6 +319,13 @@ void YtesAudio::dodajZyroskop(YtesZyroskop* pZyroskop) {
 */
 void YtesAudio::dodajRadar(YtesRadar* pRadar) {
 	radar = pRadar;
+};
+
+/**
+* @brief Zainicjalizuj wskazany napêd.
+*/
+void YtesAudio::dodajNaped(YtesNaped* pNaped) {
+	naped = pNaped;
 };
 
 /**
@@ -431,15 +450,10 @@ void YtesAudio::grajMuzyke(int nrNagrania) {
 	_PO = wartosc; // tymczasowe obejœcie problemu z indexowaniem utworów
 	if (wartosc == 0) {
 		AUDIO_INFO_V("Zapetlam katalog z muzyka :", katMuzyka);
-///		playerPrawy.repeatFolder(katMuzyka);
-		poleceniaPrawy->dodaj(30, katMuzyka, 0); //repeat folder
-		return;
+		poleceniaPrawy->dodaj(30, katMuzyka, 0); //repeatFolder(param1)
+	}else {
+		poleceniaPrawy->dodaj(20, katMuzyka, wartosc);//playFolder(param1, param2);
 	};
-
-	//AUDIO_INFO_V("Gram muzyke :", wartosc);
-///		playerPrawy.playFolder(katMuzyka, wartosc);
-		//playerPrawy.loop(indexDlaMuzyki(nrNagrania));
-	poleceniaPrawy->dodaj(20, katMuzyka, wartosc);
 };
 
 /**
@@ -454,15 +468,12 @@ void YtesAudio::grajEfekt(int nrNagrania) {
 	if (wartosc < 0) wartosc = 0;
 	if (wartosc > iloscEfektow) wartosc = 0;
 	if (wartosc == 0) {
-///		playerLewy.stop();
 		poleceniaLewy->dodaj(70, 0, 0); //stop
 		return;
 	}
-	//AUDIO_INFO_V("Gram efekt:", wartosc);
 	switch (tryb) {
 	case NORMALNY:
-///		playerLewy.playFolder(katEfekty, wartosc);
-		poleceniaLewy->dodaj(20, katEfekty, wartosc);
+		poleceniaLewy->dodaj(20, katEfekty, wartosc); //playFolder(param1, param2);
 		break;
 	case WYCISZANIE:
 		muzykaWyciszona = true;
@@ -470,19 +481,14 @@ void YtesAudio::grajEfekt(int nrNagrania) {
 		int nowaGlosnosc;
 		nowaGlosnosc = glosnoscPrawy - poziomWyciszenia;
 		if (nowaGlosnosc < 0) nowaGlosnosc = 0;
-		AUDIO_INFO_V("[audio](grajEfekt) wyciszam muzyke do  : ", nowaGlosnosc);
-///		playerPrawy.volume(nowaGlosnosc);	
-		poleceniaPrawy->dodaj(10, nowaGlosnosc, 0);
-///		playerLewy.playFolder(katEfekty, wartosc);
-		poleceniaLewy->dodaj(20, katEfekty, wartosc);
+		poleceniaPrawy->dodaj(10, nowaGlosnosc, 0);//volume(param1)
+		poleceniaLewy->dodaj(20, katEfekty, wartosc);//playFolder(param1, param2);
 		break;
 
 	case PALZOWANIE:
 		muzykaPauza = true;
-///		playerPrawy.pause();
-		poleceniaPrawy->dodaj(50, 0, 0);
-///		playerLewy.playFolder(katEfekty, wartosc);
-		poleceniaLewy->dodaj(20, katEfekty, wartosc);
+		poleceniaPrawy->dodaj(50, 0, 0);//pause
+		poleceniaLewy->dodaj(20, katEfekty, wartosc);//playFolder(param1, param2);
 		break;
 	default:
 		break;
@@ -519,8 +525,6 @@ void YtesAudio::grajSdIndex(KANAL kanal , int index) {
 * Polecenie KOLEJKOWANE
 */
 void YtesAudio::grajMuzykePowitalna() {
-	//playerPrawy.playFolder(5, 1);
-///	playerPrawy.repeatFolder(5);
 	poleceniaPrawy->dodaj(30, 5, 0); //repeatFolder 5
 };
 
@@ -529,67 +533,13 @@ void YtesAudio::grajMuzykePowitalna() {
 * sprawdza czy efekt specjalny zakonczyl sie. Jesli tak przywraca poprzedni¹ g³oœnoœæ lub odpa³zowuje glowny utwor.
 */
 void YtesAudio::audioHandler() {
-	// obsluga polecen audio
-	poleceniaPrawy->obsluzPolecenia();
+	// obs³uga poleceñ audio
+	unsigned long msTeraz = millis();
+	//TODO: w tej chwili zamieniona kolejnoœæ poleceñ, czy coœ poprawi ???
 	poleceniaLewy->obsluzPolecenia();
-
-	// obs³uga na podstawie radaru
-	if (radar != nullptr && millis() > msOstatniAutoEfekt && uwzglednijRadar == true) {
-		float odleglosc = radar->dystans();
-		if (odleglosc < _odlegloscRadarBlisko) {
-			byte indexEfektu = losujZgrupy(RADAR_BLISKO);
-			msOstatniAutoEfekt = millis() + msPrzerwaEfektyBaza + random(msPrzerwaEfektyLos);
-			if (indexEfektu > 0) {
-				grajEfekt(indexEfektu);
-			};
-		};
-	};
-
-	//obs³uga efektów dzwiêkowych na podstawie wskazan zyroskopu.
-	if (zyroskop != nullptr && millis() > msOstatniAutoEfekt && uwzglednijZyroskop == true) {
-		STAN_ZYROSKOP stan = zyroskop->pobierzStan();
-		byte indexEfektu;
-		msOstatniAutoEfekt = millis() + msPrzerwaEfektyBaza + random(msPrzerwaEfektyLos);
-		zyroskop->wypiszStan(false);
-		switch (stan) {
-			case STAN_ZYROSKOP::BRAK:
-				indexEfektu = losujZgrupy(LOSOWE_GADANIE);				
-				break;
-			case STAN_ZYROSKOP::LEWO_PRZECHYL:
-				indexEfektu = losujZgrupy(PRZECHYL_BOK_MALY);
-				break;
-			case STAN_ZYROSKOP::LEWO_LEZE:
-				indexEfektu = losujZgrupy(PRZECHYL_BOK_DUZY);
-				break;
-			case STAN_ZYROSKOP::PRAWO_PRZECHYL:
-				indexEfektu = losujZgrupy(PRZECHYL_BOK_MALY);
-				break;
-			case STAN_ZYROSKOP::PRAWO_LEZE:
-				indexEfektu = losujZgrupy(PRZECHYL_BOK_DUZY);
-				break;
-			case STAN_ZYROSKOP::PRZOD_1:
-				indexEfektu = losujZgrupy(PRZECHYL_PRZOD_MALY);
-				break;
-			case STAN_ZYROSKOP::PRZOD_2:
-				indexEfektu = losujZgrupy(PRZECHYL_PRZOD_DUZY);
-				break;
-			case STAN_ZYROSKOP::TYL_1:
-				indexEfektu = losujZgrupy(PRZECHYL_TYL_MALY);
-				break;
-			case STAN_ZYROSKOP::TYL_2:
-				indexEfektu = losujZgrupy(PRZECHYL_TYL_DUZY);
-				break;
-			case STAN_ZYROSKOP::WSTRZAS:
-				indexEfektu = losujZgrupy(WSTRZAS_POJAZDU);
-				break;
-			default:
-				break;
-		};
-		if (indexEfektu > 0) {
-			grajEfekt(indexEfektu);
-		};
-	};
-
+	poleceniaPrawy->obsluzPolecenia();
+	//TODO : mo¿liwy problem polegaj¹cym na tym , ¿e lewy (efekty) otrzyma³ polecenie grania efektu , lecz odpowiedz jeszcze nie nadeszla
+	// 
 	//Przywróæ poprzedni¹ g³oœnoœæ lub odpa³zuj utwór
 	if (muzykaWyciszona || muzykaPauza) {
 		if (portLewy->available()) {
@@ -597,18 +547,111 @@ void YtesAudio::audioHandler() {
 			AUDIO_INFO_V("[audio] handler -> stan lewy :", lewyGra);
 			if (muzykaWyciszona && !lewyGra) {
 				AUDIO_INFO_V("[audio](wyciszenie) powracam do poziomu glosnosci : ", muzykaPrzedWyciszeniem);
-///				playerPrawy.volume(muzykaPrzedWyciszeniem);
-				poleceniaPrawy->dodaj(10, muzykaPrzedWyciszeniem, 0);
+				poleceniaPrawy->dodaj(10, muzykaPrzedWyciszeniem, 0); //volume(param1)
 				muzykaWyciszona = false;
 			};
 			if (muzykaPauza && !lewyGra) {
 				AUDIO_INFO("[audio] handler -> odpalzowanie");
-///				playerPrawy.resume();
 				poleceniaPrawy->dodaj(60, 0, 0); //resume
 				muzykaPauza = false;
 			};
 		};
 	};
+
+	if (!robotSparowany) return; //nie sparowany nic nie gramy
+
+	//uwzglednij gadanie dla nudy
+	if (uwzglednijNude == true) {
+		//zdarzenie od napêdu
+		if (naped != nullptr) {
+			msOstatniRuchNaped = naped->ostatniRuch();
+			if (msOstatniRuchNaped > msNuda) msNuda = msOstatniRuchNaped;
+		};
+		//zdarzenie (wewnêtrzne) polecenie dŸwiêku , przyciski 1-7
+		//zmienna ustawia polecenie przychodz¹ce 'LO' - lewy odtwarzanie, domyœlnie dŸwiêki
+		if (msOstatniPrzyciskEfekt > msNuda) msNuda = msOstatniPrzyciskEfekt;
+
+		//zdarzenie od radaru
+		if (radar != nullptr) {
+			msOstatniRuchRadar = radar->ostatniRuch();
+			if (msOstatniRuchRadar > msNuda) msNuda = msOstatniRuchRadar;
+		};
+
+		if (msTeraz >= msNuda + msNudaCzekaj) {
+			if (msTeraz > msNastepnyAutoEfekt) {
+				msNastepnyAutoEfekt = msTeraz + msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
+				byte indexEfektu = losujZgrupy(LOSOWE_GADANIE);
+				if (indexEfektu > 0) {
+					grajEfekt(indexEfektu);
+					return; //coœ powiedzia³em , przerwij funkcjê
+				};
+			};
+		};
+	};
+
+	// obs³uga na podstawie radaru
+	if (uwzglednijRadar == true) {
+		if (radar != nullptr) {
+			if (msTeraz > msNastepnyAutoEfekt) {
+				float odleglosc = radar->dystans();
+				if (odleglosc < _odlegloscRadarBlisko) {
+					byte indexEfektu = losujZgrupy(RADAR_BLISKO);
+					msNastepnyAutoEfekt = msTeraz + msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
+					if (indexEfektu > 0) {
+						grajEfekt(indexEfektu);
+						return; //coœ powiedzia³em , przerwij funkcjê
+					};
+				};
+			};
+		};
+	};
+
+	//obs³uga efektów dzwiêkowych na podstawie wskazan zyroskopu.
+	if (uwzglednijZyroskop == true) {
+		if (zyroskop != nullptr) {
+			if (msTeraz > msNastepnyAutoEfekt) {
+				STAN_ZYROSKOP stan = zyroskop->pobierzStan();
+				byte indexEfektu;
+				msNastepnyAutoEfekt = msTeraz + msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
+				zyroskop->wypiszStan(false);
+				switch (stan) {
+				//Stan BRAK , w domysle nuda teraz obs³ugiwany osobno.
+				case STAN_ZYROSKOP::LEWO_PRZECHYL:
+					indexEfektu = losujZgrupy(PRZECHYL_BOK_MALY);
+					break;
+				case STAN_ZYROSKOP::LEWO_LEZE:
+					indexEfektu = losujZgrupy(PRZECHYL_BOK_DUZY);
+					break;
+				case STAN_ZYROSKOP::PRAWO_PRZECHYL:
+					indexEfektu = losujZgrupy(PRZECHYL_BOK_MALY);
+					break;
+				case STAN_ZYROSKOP::PRAWO_LEZE:
+					indexEfektu = losujZgrupy(PRZECHYL_BOK_DUZY);
+					break;
+				case STAN_ZYROSKOP::PRZOD_1:
+					indexEfektu = losujZgrupy(PRZECHYL_PRZOD_MALY);
+					break;
+				case STAN_ZYROSKOP::PRZOD_2:
+					indexEfektu = losujZgrupy(PRZECHYL_PRZOD_DUZY);
+					break;
+				case STAN_ZYROSKOP::TYL_1:
+					indexEfektu = losujZgrupy(PRZECHYL_TYL_MALY);
+					break;
+				case STAN_ZYROSKOP::TYL_2:
+					indexEfektu = losujZgrupy(PRZECHYL_TYL_DUZY);
+					break;
+				case STAN_ZYROSKOP::WSTRZAS:
+					indexEfektu = losujZgrupy(WSTRZAS_POJAZDU);
+					break;
+				default:
+					break;
+				};
+				if (indexEfektu > 0) {
+					grajEfekt(indexEfektu);
+				};
+			};//limit czasowy
+		};//¿yroskop nie null
+	};//uwzglêdnij ¿yroskop
 };
 
 /**
@@ -664,7 +707,7 @@ void YtesAudio::glosnosc(KANAL kanal, int wartosc) {
 */
 void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	boolean torZmieniony = false;
-
+	//tor
 	JsonVariant vTor = (*dane)["TOR"];
 	if (!vTor.isNull()) {
 		int nTor = vTor.as<int>();
@@ -673,7 +716,8 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 			torZmieniony = false;
 		};
 	};
-	//tryb : 
+
+	//tryb
 	JsonVariant vTryb = (*dane)["TRYB"];
 	if (!vTryb.isNull()) {
 		ustawTrybAudio((TRYB_AUDIO)vTryb.as<int>());
@@ -707,7 +751,8 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	//poziom wyciszenia
 	JsonVariant vPW = (*dane)["PW"];
 	if (!vPW.isNull()) {
-		ustawPoziomWyciszenia(vPW.as<int>());
+		int pw = vPW.as<int>();
+		ustawPoziomWyciszenia(pw);
 	};
 	//Odtwarzany kanal prawy (muzyka)
 	JsonVariant vPO = (*dane)["PO"];
@@ -724,6 +769,7 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vLO.isNull()) {
 		int lo = vLO.as<int>();
 ///grajEfekt(vLO.as<int>());
+		msOstatniPrzyciskEfekt = millis();
 		poleceniaLewy->dodaj(20, katEfekty, lo);
 	};
 	//Uwzglednij zyroskop

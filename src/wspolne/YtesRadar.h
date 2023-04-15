@@ -9,20 +9,21 @@ class YtesRadar {
 private:
 	unsigned long _msKrok = 50;
 	unsigned long _msNastepnyKrok;
-	int _ruch180zapamietanyKat;	  //
-	int _ruch180aktualnyKat;	  //	
-	int _ruch180kierunek; // -1 lub 1  ,-1 - zacznij d¹¿yæ do 0
-	int _ruch180wykonuj = false;
+	int _ruch180zapamietanyKat;		//
+	int _ruch180aktualnyKat;		//	
+	int _ruch180kierunek;			// -1 lub 1  ,-1 - zacznij d¹¿yæ do 0
+	int _ruch180wykonuj = false;	//
 
-	int aktualnyKat; //aktualnie ustawiony kat radaru;
+	int aktualnyKat;		 // aktualnie ustawiony kat radaru;
 	Servo serwoRadar;
 	int pinTrigger;
 	int pinEcho;
-	int zasiegMin = 20;		//w mm minimalna mierzalna odleg³oœæ dla czujnika
-	int zasiegMax = 4000;	//w mm maxymalna mierzalna odleg³oœæ dla czujnika
-	float _ostatniPomiar = 10.0f; //realny pomiar  zakres to : 2..400  cm
-	long msCzasPomiaru = 200; //interwa³ okresowego pomiaru odleg³oœci
+	int zasiegMin = 20;				// w mm minimalna mierzalna odleg³oœæ dla czujnika
+	int zasiegMax = 2000;			// w mm maxymalna mierzalna odleg³oœæ dla czujnika
+	float _ostatniPomiar = 10.0f;   // realny pomiar  zakres to : 2..180 cm
+	long msCzasPomiaru = 200;		// interwa³ okresowego pomiaru odleg³oœci
 	unsigned long msNastepnyPomiar = millis() + msCzasPomiaru;
+	unsigned long msRadarAkcja = 0L;// zmienna pomocnicza przekazywana klasie audio, ruch radaru przerywa nudê
 	unsigned int echoMicrosekundy();
 	int dystansMm();
 	float dystansCm();
@@ -38,6 +39,7 @@ public:
 	String odpowiedz();
 	void ruch180Inicjuj(int katKoncowy);
 	void ruch180Krok();
+	unsigned long ostatniRuch() { return msRadarAkcja; };
 
 };
 //-----------------KONSTRUKTOR , DESTRUKTOR, PRYWATNE ----------------------------
@@ -145,10 +147,12 @@ float YtesRadar::dystans() {
 };
 
 /**
-* "RUCH180" - 0..180 , bazowy k¹t od którego przeprowadziæ demonstracjê
-* "KAT" - 0..180 , ustaw radar na wskazany k¹t
+* "STARTKAT" - 0..180 , bazowy k¹t od którego przeprowadziæ demonstracjê
+* "WYKONAJ" - 0..1 , 1 - rozpocznij sekwencjê
+* "KAT" - 0..180 - ustaw fizycznie radar
 */
 void YtesRadar::obslozPolecenieDane(JsonObject* dane) {
+	//demonstracna niezaleznego ruchu.
 	JsonVariant vRuch180 = (*dane)["RUCH180"];
 	if (!vRuch180.isNull()) {
 		JsonVariant vStart = (*dane)["RUCH180"]["STARTKAT"];
@@ -159,7 +163,7 @@ void YtesRadar::obslozPolecenieDane(JsonObject* dane) {
 			if (wykonaj == 1) ruch180Inicjuj(start);
 		};
 	};
-
+	//fizyczne ustawienie radaru
 	JsonVariant vKat = (*dane)["KAT"];
 	if (!vKat.isNull()) {
 		int nowyKat = vKat.as<int>();
@@ -195,6 +199,7 @@ void YtesRadar::ruch180Inicjuj(int katKoncowy) {
 	_ruch180wykonuj = true;
 	_ruch180kierunek = -1;
 	_msNastepnyKrok = millis();
+	msRadarAkcja = _msNastepnyKrok; //przerwij nudê
 	ustawRadar(katKoncowy);
 };
 
@@ -205,6 +210,7 @@ void YtesRadar::ruch180Krok() {
 	if (_ruch180wykonuj == true) {
 		if (millis() > _msNastepnyKrok) {
 			_msNastepnyKrok = millis() + _msKrok;
+			msRadarAkcja = _msNastepnyKrok; //odœwie¿aj, w domyœle odwlekaj nudê do puki trwa proces.
 			if (_ruch180aktualnyKat == 0) _ruch180kierunek = 1;
 			if (_ruch180aktualnyKat == 180) {
 				ustawRadar(_ruch180zapamietanyKat);
