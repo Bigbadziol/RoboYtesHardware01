@@ -162,12 +162,9 @@ private:
 	YtesZyroskop* zyroskop = nullptr;
 	YtesRadar* radar = nullptr;
 	float _odlegloscRadarBlisko = 15.0f; // jeœli odleg³oœæ jest mniejsza od wskazanej, aktywuj efekt dŸwiêkowy dla grupy RADAR_BLISKO
-
-	//efekty na podstawie napêdu
 	YtesNaped* naped = nullptr;
 	
 	//od tego miejsca zdarzenia wp³ywaj¹ce na odgrywanie dzwiêku.
-	//..TODO
 	boolean robotSparowany = false;
 	unsigned long msOstatniRuchNaped = 0L;		// czas fizycznie wykonanego ruchu pojazdu , dane z naped lub uruchomie
 	unsigned long msOstatniPrzyciskEfekt = 0L;	// to uaktualnia obsluzPolecenie dane , dla parametru 'LO' (lewy odtwarzanie) dla przyciskow 1-7 w apce
@@ -185,10 +182,10 @@ private:
 
 
 public:
-	bool uwzglednijNude = false;
-	bool uwzglednijZyroskop = false;
-	bool uwzglednijRadar = false;
-	bool uwzglednijNaped = false;
+	boolean uwzglednijNude = false;
+	boolean uwzglednijZyroskop = false;
+	boolean uwzglednijRadar = false;
+	boolean uwzglednijNaped = false;
 
 	int indexDlaMuzyki(int numerNagrania); 
 	byte ileEfektowWGrupie(GRUPA_DZWIEKOWA grupa);
@@ -713,7 +710,7 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 		int nTor = vTor.as<int>();
 		if (nTor != tor) {
 			ustawTor((TOR)vTor.as<int>());
-			torZmieniony = false;
+			torZmieniony = true;
 		};
 	};
 
@@ -727,7 +724,6 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vLG.isNull()) {
 		int lg = vLG.as<int>();
 		if (glosnoscLewy != lg) {
-/// glosnosc(LEWY, lg);
 			poleceniaLewy->dodaj(10, lg, 0);
 			AUDIO_INFO_V("Glosnik lewy , glosnosc ustawiona :", lg);
 		}
@@ -740,7 +736,6 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vPG.isNull()) {
 		int pg = vPG.as<int>();
 		if (glosnoscPrawy != pg) {
-/// glosnosc(PRAWY, pg);
 			poleceniaPrawy->dodaj(10, pg, 0);
 			AUDIO_INFO_V("Glosnik prawy , glosnosc ustawiona :", pg);
 		}
@@ -758,9 +753,8 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	JsonVariant vPO = (*dane)["PO"];
 	if (!vPO.isNull()) {
 		int po = vPO.as<int>();
-		if (po != _PO) {
+		if ((po != _PO) || (torZmieniony == true)) {
 			_PO = po;
-/// grajMuzyke(po);
 			poleceniaPrawy->dodaj(20, katMuzyka, po);
 		};
 	};
@@ -768,7 +762,6 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	JsonVariant vLO = (*dane)["LO"];
 	if (!vLO.isNull()) {
 		int lo = vLO.as<int>();
-///grajEfekt(vLO.as<int>());
 		msOstatniPrzyciskEfekt = millis();
 		poleceniaLewy->dodaj(20, katEfekty, lo);
 	};
