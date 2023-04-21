@@ -145,7 +145,7 @@ void setup() {
 #endif 
 
     PD_INFO("-----------------------------------------------------");
-    PD_INFO("RoboYtesHardware 1.19");
+    PD_INFO("RoboYtesHardware 1.22");
     PD_INFO("Bardzo duze zmiany w YtesAudio, YtesAudioPolecenie");
     PD_INFO("--");
 

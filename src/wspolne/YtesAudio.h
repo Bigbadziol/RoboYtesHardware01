@@ -155,6 +155,12 @@ private:
 	int muzykaPrzedWyciszeniem = glosnoscPrawy; // pomocnicza dla trybu : WYCISZANIE
 	boolean muzykaPauza = false;
 	boolean muzykaWyciszona = false; // pomocnicza dla trybu : WYCISZANIE
+
+	boolean _lewyPopStan = false; // 
+	boolean _lewyAktStan = false; //
+	FireTimer ftLewyGra;   // co 100ms sprawdzamy w audioHandlerze czy efekt : rozpoczêto granie, w trakcie grania,zakonczono granie,nic
+						   // nie gra d³u¿szy czas
+
 	int _PO=1; //tymczasowe rozwi¹zanie z powodu problemów z indexowaniem utworów na karcie SD.
 			 // tu przechowujemy wartoœæ numeru nagrania w katalogu aktualnie odtwarzanego utworu muzycznego.
 			 // mo¿na mówiæ raczej o numerze porz¹dkowym w katalogu nie zaœ o unikalnym indexie w kontekscie ca³ej karty SD.
@@ -260,6 +266,7 @@ void YtesAudio::_YtesAudio() {
 	msNuda = millis() + msNudaCzekaj;
 	poleceniaLewy = new YtesAudioPolecenie(&playerLewy, "LEWY", polecenieOpoznienie);
 	poleceniaPrawy = new YtesAudioPolecenie(&playerPrawy, "PRAWY", polecenieOpoznienie);
+	ftLewyGra.begin(100); // co 100ms sprawdzaj czy nast¹pi³a zmiana statusu odgrywania efektu
 };
 
 #if UZYJ_HARDWARE == 1
@@ -532,12 +539,30 @@ void YtesAudio::grajMuzykePowitalna() {
 void YtesAudio::audioHandler() {
 	// obs³uga poleceñ audio
 	unsigned long msTeraz = millis();
-	//TODO: w tej chwili zamieniona kolejnoœæ poleceñ, czy coœ poprawi ???
-	poleceniaLewy->obsluzPolecenia();
-	poleceniaPrawy->obsluzPolecenia();
-	//TODO : mo¿liwy problem polegaj¹cym na tym , ¿e lewy (efekty) otrzyma³ polecenie grania efektu , lecz odpowiedz jeszcze nie nadeszla
-	// 
+
+	//Kontrola zmiany stanu (zakonczono granie efektu)
+	if (ftLewyGra.fire()) {
+		_lewyPopStan = _lewyAktStan;
+		_lewyAktStan = playerLewy.isPlaying();		
+
+		if (_lewyAktStan == false && _lewyPopStan == true) { //teoretycznie zakonczylo sie granie
+			if (muzykaWyciszona) {
+				AUDIO_INFO_V("[audio](wyciszenie) powracam do poziomu glosnosci : ", muzykaPrzedWyciszeniem);
+				poleceniaPrawy->dodaj(10, muzykaPrzedWyciszeniem, 0); //volume(param1)
+				muzykaWyciszona = false;
+			};
+
+			if (muzykaPauza) {
+				AUDIO_INFO("[audio] handler -> odpalzowanie");
+				poleceniaPrawy->dodaj(60, 0, 0); //resume
+				muzykaPauza = false;
+			};
+		};
+	};
+
+	// POPRZEDNIA : problemantyczna wersja
 	//Przywróæ poprzedni¹ g³oœnoœæ lub odpa³zuj utwór
+/*
 	if (muzykaWyciszona || muzykaPauza) {
 		if (portLewy->available()) {
 			bool lewyGra = playerLewy.isPlaying();
@@ -554,26 +579,32 @@ void YtesAudio::audioHandler() {
 			};
 		};
 	};
+*/
+	//TODO: w tej chwili zamieniona kolejnoœæ poleceñ, czy coœ poprawi ???
+	poleceniaLewy->obsluzPolecenia();
+	poleceniaPrawy->obsluzPolecenia();
 
 	if (!robotSparowany) return; //nie sparowany nic nie gramy
 
 	//uwzglednij gadanie dla nudy
 	if (uwzglednijNude == true) {
-		//zdarzenie od napêdu
+		//Najpierw sprawdzamy czy nast¹pi³o zdarzenie przerywaj¹ce nudê
+		// 1) zdarzenie od napêdu
 		if (naped != nullptr) {
 			msOstatniRuchNaped = naped->ostatniRuch();
 			if (msOstatniRuchNaped > msNuda) msNuda = msOstatniRuchNaped;
 		};
-		//zdarzenie (wewnêtrzne) polecenie dŸwiêku , przyciski 1-7
-		//zmienna ustawia polecenie przychodz¹ce 'LO' - lewy odtwarzanie, domyœlnie dŸwiêki
+		
+		// 2) zdarzenie (wewnêtrzne) polecenie dŸwiêku , przyciski 1-7
+		//    zmienna ustawia polecenie przychodz¹ce 'LO' - lewy odtwarzanie, domyœlnie dŸwiêki
 		if (msOstatniPrzyciskEfekt > msNuda) msNuda = msOstatniPrzyciskEfekt;
 
-		//zdarzenie od radaru
+		// 3) zdarzenie od radaru , na ten moment przycisk nr :8
 		if (radar != nullptr) {
 			msOstatniRuchRadar = radar->ostatniRuch();
 			if (msOstatniRuchRadar > msNuda) msNuda = msOstatniRuchRadar;
 		};
-
+		//czas up³yn¹
 		if (msTeraz >= msNuda + msNudaCzekaj) {
 			if (msTeraz > msNastepnyAutoEfekt) {
 				msNastepnyAutoEfekt = msTeraz + msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
@@ -724,6 +755,7 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vLG.isNull()) {
 		int lg = vLG.as<int>();
 		if (glosnoscLewy != lg) {
+			glosnoscLewy = lg;
 			poleceniaLewy->dodaj(10, lg, 0);
 			AUDIO_INFO_V("Glosnik lewy , glosnosc ustawiona :", lg);
 		}
@@ -736,6 +768,7 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vPG.isNull()) {
 		int pg = vPG.as<int>();
 		if (glosnoscPrawy != pg) {
+			glosnoscPrawy = pg;
 			poleceniaPrawy->dodaj(10, pg, 0);
 			AUDIO_INFO_V("Glosnik prawy , glosnosc ustawiona :", pg);
 		}
@@ -755,7 +788,9 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 		int po = vPO.as<int>();
 		if ((po != _PO) || (torZmieniony == true)) {
 			_PO = po;
-			poleceniaPrawy->dodaj(20, katMuzyka, po);
+			//poleceniaPrawy->dodaj(20, katMuzyka, po); //bo nie bêdzie wyciszac
+			grajMuzyke(po);
+
 		};
 	};
 	//Odtwarzany kanal lewy (efekty)
@@ -763,7 +798,8 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vLO.isNull()) {
 		int lo = vLO.as<int>();
 		msOstatniPrzyciskEfekt = millis();
-		poleceniaLewy->dodaj(20, katEfekty, lo);
+		//poleceniaLewy->dodaj(20, katEfekty, lo); // bo nie bêdzie wyciszac
+		grajEfekt(lo);
 	};
 	//Uwzglednij zyroskop
 	JsonVariant vUZ = (*dane)["UZ"];
