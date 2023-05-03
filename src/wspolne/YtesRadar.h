@@ -219,6 +219,7 @@ void YtesRadar::ruch180Krok() {
 			}
 			_ruch180aktualnyKat = _ruch180aktualnyKat + _ruch180kierunek;
 			ustawRadar(_ruch180aktualnyKat);
+			//RADAR_INFO("krok");
 		};
 	};
 };

@@ -78,7 +78,7 @@ private:
 	
 	const int defKatMuzyka = 1; //katalog dla glosnika lewego , dla cyfry 1, fizycznie musi miec postac "001" 
 	const int defKatEfekty = 2;//katalog dla glosnika prawego, dla cyfry 2, fizycznie musi miec postac "002"
-	static const int iloscUtworow = 7; // musi sie faktycznie pokrywac z iloscia plikow w folderze oraz pozycjami 
+	static const int iloscUtworow = 6; // musi sie faktycznie pokrywac z iloscia plikow w folderze oraz pozycjami 
 	static const int iloscEfektow = 34; // ..zdefiniowanymi w listach
 									   // Uwaga!! Sprawdzac wartoœæ, zmiana podejœcia z listy efektów przesy³anych
 									   // do kontrolera do : efekty nale¿¹ do grupy dzwiêkowej
@@ -94,6 +94,7 @@ private:
 		{PRZECHYL_BOK_DUZY,7},		// lezec mam az zardzewieje			,
 		{PRZECHYL_BOK_DUZY,8},		// podnies mnie						,
 		{PRZECHYL_BOK_DUZY,9},		// wysokie ac						,
+/*
 		{PRZECHYL_PRZOD_MALY,10},	// co jeszcze mam zrobic			,
 		{PRZECHYL_PRZOD_MALY,11},	// moglo byc latwiej				,
 		{PRZECHYL_PRZOD_MALY,12},	// zadne wyzwanie					,
@@ -106,6 +107,24 @@ private:
 		{PRZECHYL_TYL_DUZY,19},		// adam malysz						,
 		{PRZECHYL_TYL_DUZY,20},		// stromo tu						,
 		{PRZECHYL_TYL_DUZY,21},		// zeby sibie wybije				,
+*/
+		//Zamieniono programowo dzwieki
+		{PRZECHYL_PRZOD_MALY,16},	// jak na sankach					,
+		{PRZECHYL_PRZOD_MALY,17},	// no luz oszczedzamy paliwo		,
+		{PRZECHYL_PRZOD_MALY,18},	// z gorki latwiej					,
+		{PRZECHYL_PRZOD_DUZY,19},	// adam malysz						,
+		{PRZECHYL_PRZOD_DUZY,20},	// stromo tu						,
+		{PRZECHYL_PRZOD_DUZY,21},	// zeby sibie wybije				,
+
+		{PRZECHYL_TYL_MALY,10},		// co jeszcze mam zrobic			,
+		{PRZECHYL_TYL_MALY,11},		// moglo byc latwiej				,
+		{PRZECHYL_TYL_MALY,12},		// zadne wyzwanie					,
+		{PRZECHYL_TYL_DUZY,13},		// bialy montarz					,
+		{PRZECHYL_TYL_DUZY,14},		// jak spiderman					,
+		{PRZECHYL_TYL_DUZY,15},		// wspinac sie mam					,
+
+
+
 		{PRZYCISKI,22},				// gin								,
 		{PRZYCISKI,23},				// latwiej bedzie wyfgrac			,
 		{PRZYCISKI,24},				// liczylem na wiecej				,
@@ -123,7 +142,7 @@ private:
 
 	const char* listaUtworowCenzura[iloscUtworow] = {		"Doom-Ethernal",
 															"Kung-fu Panda",
-															"Tylko biedronka",
+															//"Tylko biedronka", //do wywalenia
 															"Neffex-Fight back",
 															"Lol-Get Jinxed",
 															"Drowning pool-Bodies",
@@ -133,7 +152,7 @@ private:
 															"Eminem-Without me",
 															"Gorillaz-19-2000",
 															"Letni-Piekny fiat",
-															"Khali4mb-Hate niggas",
+															//"Khali4mb-Hate niggas", // do wywalenia
 															"One punch - Opening",
 															"Lydka grubasa - Adelajda"
 	};
@@ -432,6 +451,7 @@ void YtesAudio::ustawPoziomWyciszenia(int nowyPoziom) {
 	if (nowaWartosc < 1) nowaWartosc = 1;
 	if (nowaWartosc > 15) nowaWartosc = 15;
 	poziomWyciszenia = nowaWartosc;
+	AUDIO_INFO_V("[audio] -> Poziom wyciszenia : ", nowaWartosc);
 };
 
 /**
@@ -481,7 +501,8 @@ void YtesAudio::grajEfekt(int nrNagrania) {
 		break;
 	case WYCISZANIE:
 		muzykaWyciszona = true;
-		muzykaPrzedWyciszeniem = glosnoscPrawy;
+		//muzykaPrzedWyciszeniem = glosnoscPrawy; ..ustawiana teraz w poleceniu przychodz¹cym
+		
 		int nowaGlosnosc;
 		nowaGlosnosc = glosnoscPrawy - poziomWyciszenia;
 		if (nowaGlosnosc < 0) nowaGlosnosc = 0;
@@ -560,62 +581,13 @@ void YtesAudio::audioHandler() {
 		};
 	};
 
-	// POPRZEDNIA : problemantyczna wersja
-	//Przywróæ poprzedni¹ g³oœnoœæ lub odpa³zuj utwór
-/*
-	if (muzykaWyciszona || muzykaPauza) {
-		if (portLewy->available()) {
-			bool lewyGra = playerLewy.isPlaying();
-			AUDIO_INFO_V("[audio] handler -> stan lewy :", lewyGra);
-			if (muzykaWyciszona && !lewyGra) {
-				AUDIO_INFO_V("[audio](wyciszenie) powracam do poziomu glosnosci : ", muzykaPrzedWyciszeniem);
-				poleceniaPrawy->dodaj(10, muzykaPrzedWyciszeniem, 0); //volume(param1)
-				muzykaWyciszona = false;
-			};
-			if (muzykaPauza && !lewyGra) {
-				AUDIO_INFO("[audio] handler -> odpalzowanie");
-				poleceniaPrawy->dodaj(60, 0, 0); //resume
-				muzykaPauza = false;
-			};
-		};
-	};
-*/
+
 	//TODO: w tej chwili zamieniona kolejnoœæ poleceñ, czy coœ poprawi ???
 	poleceniaLewy->obsluzPolecenia();
 	poleceniaPrawy->obsluzPolecenia();
 
 	if (!robotSparowany) return; //nie sparowany nic nie gramy
 
-	//uwzglednij gadanie dla nudy
-	if (uwzglednijNude == true) {
-		//Najpierw sprawdzamy czy nast¹pi³o zdarzenie przerywaj¹ce nudê
-		// 1) zdarzenie od napêdu
-		if (naped != nullptr) {
-			msOstatniRuchNaped = naped->ostatniRuch();
-			if (msOstatniRuchNaped > msNuda) msNuda = msOstatniRuchNaped;
-		};
-		
-		// 2) zdarzenie (wewnêtrzne) polecenie dŸwiêku , przyciski 1-7
-		//    zmienna ustawia polecenie przychodz¹ce 'LO' - lewy odtwarzanie, domyœlnie dŸwiêki
-		if (msOstatniPrzyciskEfekt > msNuda) msNuda = msOstatniPrzyciskEfekt;
-
-		// 3) zdarzenie od radaru , na ten moment przycisk nr :8
-		if (radar != nullptr) {
-			msOstatniRuchRadar = radar->ostatniRuch();
-			if (msOstatniRuchRadar > msNuda) msNuda = msOstatniRuchRadar;
-		};
-		//czas up³yn¹
-		if (msTeraz >= msNuda + msNudaCzekaj) {
-			if (msTeraz > msNastepnyAutoEfekt) {
-				msNastepnyAutoEfekt = msTeraz + msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
-				byte indexEfektu = losujZgrupy(LOSOWE_GADANIE);
-				if (indexEfektu > 0) {
-					grajEfekt(indexEfektu);
-					return; //coœ powiedzia³em , przerwij funkcjê
-				};
-			};
-		};
-	};
 
 	// obs³uga na podstawie radaru
 	if (uwzglednijRadar == true) {
@@ -638,22 +610,24 @@ void YtesAudio::audioHandler() {
 	if (uwzglednijZyroskop == true) {
 		if (zyroskop != nullptr) {
 			if (msTeraz > msNastepnyAutoEfekt) {
-				STAN_ZYROSKOP stan = zyroskop->pobierzStan();
 				byte indexEfektu;
-				msNastepnyAutoEfekt = msTeraz + msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
+				STAN_ZYROSKOP stan = zyroskop->pobierzStan(); //aktualizuj czas gadania (nuda) gdy cos innego)
+				if (stan != STAN_ZYROSKOP::BRAK) {
+					msNastepnyAutoEfekt = msTeraz + msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
+				};
 				zyroskop->wypiszStan(false);
 				switch (stan) {
 				//Stan BRAK , w domysle nuda teraz obs³ugiwany osobno.
-				case STAN_ZYROSKOP::LEWO_PRZECHYL:
+				case STAN_ZYROSKOP::LEWO_1:
 					indexEfektu = losujZgrupy(PRZECHYL_BOK_MALY);
 					break;
-				case STAN_ZYROSKOP::LEWO_LEZE:
+				case STAN_ZYROSKOP::LEWO_2:
 					indexEfektu = losujZgrupy(PRZECHYL_BOK_DUZY);
 					break;
-				case STAN_ZYROSKOP::PRAWO_PRZECHYL:
+				case STAN_ZYROSKOP::PRAWO_1:
 					indexEfektu = losujZgrupy(PRZECHYL_BOK_MALY);
 					break;
-				case STAN_ZYROSKOP::PRAWO_LEZE:
+				case STAN_ZYROSKOP::PRAWO_2:
 					indexEfektu = losujZgrupy(PRZECHYL_BOK_DUZY);
 					break;
 				case STAN_ZYROSKOP::PRZOD_1:
@@ -680,6 +654,37 @@ void YtesAudio::audioHandler() {
 			};//limit czasowy
 		};//¿yroskop nie null
 	};//uwzglêdnij ¿yroskop
+
+	//uwzglednij gadanie dla nudy
+	if (uwzglednijNude == true) {
+		//Najpierw sprawdzamy czy nast¹pi³o zdarzenie przerywaj¹ce nudê
+		// 1) zdarzenie od napêdu
+		if (naped != nullptr) {
+			msOstatniRuchNaped = naped->ostatniRuch();
+			if (msOstatniRuchNaped > msNuda) msNuda = msOstatniRuchNaped;
+		};
+
+		// 2) zdarzenie (wewnêtrzne) polecenie dŸwiêku , przyciski 1-7
+		//    zmienna ustawia polecenie przychodz¹ce 'LO' - lewy odtwarzanie, domyœlnie dŸwiêki
+		if (msOstatniPrzyciskEfekt > msNuda) msNuda = msOstatniPrzyciskEfekt;
+
+		// 3) zdarzenie od radaru , na ten moment przycisk nr :8
+		if (radar != nullptr) {
+			msOstatniRuchRadar = radar->ostatniRuch();
+			if (msOstatniRuchRadar > msNuda) msNuda = msOstatniRuchRadar;
+		};
+		//czas up³yn¹
+		if (msTeraz >= msNuda + msNudaCzekaj) {
+			if (msTeraz > msNastepnyAutoEfekt) {
+				msNastepnyAutoEfekt = msTeraz + msPrzerwaGadanieBaza + random(msPrzerwaGadanieLos);
+				byte indexEfektu = losujZgrupy(LOSOWE_GADANIE);
+				if (indexEfektu > 0) {
+					grajEfekt(indexEfektu);
+					return; //coœ powiedzia³em , przerwij funkcjê
+				};
+			};
+		};
+	};
 };
 
 /**
@@ -750,30 +755,31 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	if (!vTryb.isNull()) {
 		ustawTrybAudio((TRYB_AUDIO)vTryb.as<int>());
 	}
-	//lewy kanal glosnosc
+	//lewy kanal glosnosc (efekty)
 	JsonVariant vLG = (*dane)["LG"];
 	if (!vLG.isNull()) {
 		int lg = vLG.as<int>();
 		if (glosnoscLewy != lg) {
 			glosnoscLewy = lg;
 			poleceniaLewy->dodaj(10, lg, 0);
-			AUDIO_INFO_V("Glosnik lewy , glosnosc ustawiona :", lg);
+			AUDIO_INFO_V("Glosnik lewy(efekty) , glosnosc ustawiona :", lg);
 		}
 		else {
-			AUDIO_INFO("Glosnik lewy , glosnosc bez zmian");
+			AUDIO_INFO("Glosnik lewy(efekty) , glosnosc bez zmian");
 		};
 	};
-	//prawy kanal  glosnosc
+	//prawy kanal  glosnosc (muzyka)
 	JsonVariant vPG = (*dane)["PG"];
 	if (!vPG.isNull()) {
 		int pg = vPG.as<int>();
-		if (glosnoscPrawy != pg) {
+		if (glosnoscPrawy != pg || torZmieniony == true) {
 			glosnoscPrawy = pg;
+			muzykaPrzedWyciszeniem = glosnoscPrawy;//teraz tu
 			poleceniaPrawy->dodaj(10, pg, 0);
-			AUDIO_INFO_V("Glosnik prawy , glosnosc ustawiona :", pg);
+			AUDIO_INFO_V("Glosnik prawy(muzyka) , glosnosc ustawiona :", pg);
 		}
 		else {
-			AUDIO_INFO("Glosnik prawy, glosnosc bez zmian");
+			AUDIO_INFO("Glosnik prawy(muzyka), glosnosc bez zmian");
 		};
 	};
 	//poziom wyciszenia
@@ -805,11 +811,13 @@ void YtesAudio::obslozPolecenieDane(JsonObject* dane) {
 	JsonVariant vUZ = (*dane)["UZ"];
 	if (!vUZ.isNull()) {
 		uwzglednijZyroskop = vUZ.as<boolean>();
+		AUDIO_INFO_V("[audio] -> uwzglednij zyroskop : ", uwzglednijZyroskop);
 	};
 	//Uwzglednij radar
 	JsonVariant vUR = (*dane)["UR"];
 	if (!vUR.isNull()) {
 		uwzglednijRadar = vUR.as<boolean>();
+		AUDIO_INFO_V("[audio] -> uwzglednij radar : ", uwzglednijZyroskop);
 	};
 };
 
@@ -827,8 +835,21 @@ String YtesAudio::odpowiedz() {
 	objData["PG"] = glosnoscPrawy;
 	objData["PW"] = poziomWyciszenia;
 	objData["PO"] = _PO;
-	objData["UZ"] = (int)uwzglednijZyroskop;
-	objData["UR"] = (int)uwzglednijRadar;
+	//objData["UZ"] = (byte)uwzglednijZyroskop;
+	if (uwzglednijZyroskop) {
+		objData["UZ"] = 1;
+	}
+	else {
+		objData["UZ"] = 0;
+	}
+	//objData["UR"] = (byte)uwzglednijRadar;
+	if (uwzglednijRadar) {
+		objData["UR"] = 1;
+	}
+	else {
+		objData["UR"] = 0;
+	};
+
 
 	JsonArray arrL1 = objData.createNestedArray("L1"); // cenzuralne nagrania
 	JsonArray arrL2 = objData.createNestedArray("L2"); // niecenzuralne nagrania

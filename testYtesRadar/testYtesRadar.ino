@@ -41,7 +41,7 @@ void setup() {
     while (!Serial) continue;
     delay(100);
     Serial.println("--------------------------------");
-    Serial.println("test YtesRadar 1.03");
+    Serial.println("test YtesRadar 1.05");
     Serial.println("Zabawa z serwem i HC-SR04");
     Serial.println("Przykladowa demonstracja ruchu niezaleznego.");
     
@@ -50,7 +50,16 @@ void setup() {
 
     Serial.println(radar->odpowiedz().c_str());
     //radar->ruch180Inicjuj(90);
+/*
+    Serial.println("TEST USTAWIENIA :");
+    radar->ustawRadar(10);
+    delay(3000);
+    radar->ustawRadar(170);
+    delay(3000);
+    Serial.println("KONIEC : TEST USTAWIENIA :");
+*/
     parsowaniePolecenia();
+
 
 };
 
@@ -58,9 +67,11 @@ void loop() {
 
     //Pomiar dystansu
     radar->mierzDystans();
+
     if (millis() > msWypiszPomiar) {
         msWypiszPomiar = millis() + 500;
-        Serial.printf("Odleglosc : %.2f \n",radar->dystans());
-    }
+        Serial.printf("Odleglosc : %.2f \n", radar->dystans());
+    };
+
     radar->ruch180Krok();
 }

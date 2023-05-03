@@ -6,10 +6,10 @@
 
 enum STAN_ZYROSKOP {
 	BRAK,
-	LEWO_PRZECHYL,
-	LEWO_LEZE,
-	PRAWO_PRZECHYL,
-	PRAWO_LEZE,
+	LEWO_1,
+	LEWO_2,
+	PRAWO_1,
+	PRAWO_2,
 	PRZOD_1,
 	PRZOD_2,
 	TYL_1,
@@ -46,10 +46,10 @@ typedef struct obliczenia {
 
 class YtesZyroskop {
 	private:	
-		const float X_LEWO_PRZECHYL = 20.0f; // (+)wartoœæ wyrazona w stopniach
-		const float X_LEWO_LEZE = 90.0f; //
-		const float X_PRAWO_PRZECHYL = -20.0f; //
-		const float X_PRAWO_LEZE = -90.0f; //
+		const float X_LEWO_1 = 22.5f; // (+)wartoœæ wyrazona w stopniach
+		const float X_LEWO_2 = 45.0f; //
+		const float X_PRAWO_1 = -22.5f; //
+		const float X_PRAWO_2 = -45.0f; //
 		const float Y_PRZOD_1 = 15.0f; // (+) ale tu stromo (pod gore)
 		const float Y_PRZOD_2 = 30.0f; // wywale sie na plecy
 		const float Y_TYL_1 = -15.0f;// (-) boje sie zjechac
@@ -236,10 +236,10 @@ void YtesZyroskop::aktualizujOblSredAryt() {
 String YtesZyroskop::stanToString(STAN_ZYROSKOP stan) {
 	switch (stan) {
 	case STAN_ZYROSKOP::BRAK: return "brak";
-	case STAN_ZYROSKOP::LEWO_PRZECHYL:return "lewo przechyl";
-	case STAN_ZYROSKOP::LEWO_LEZE:return "lewo leze";
-	case STAN_ZYROSKOP::PRAWO_PRZECHYL:return "prawo przechyl";
-	case STAN_ZYROSKOP::PRAWO_LEZE:return "prawo leze";
+	case STAN_ZYROSKOP::LEWO_1:return "lewo 1";
+	case STAN_ZYROSKOP::LEWO_2:return "lewo 2";
+	case STAN_ZYROSKOP::PRAWO_1:return "prawo 1";
+	case STAN_ZYROSKOP::PRAWO_2:return "prawo 2";
 	case STAN_ZYROSKOP::PRZOD_1:return "przod 1";
 	case STAN_ZYROSKOP::PRZOD_2:return "przod 2";
 	case STAN_ZYROSKOP::TYL_1:return "tyl 1";
@@ -269,24 +269,24 @@ void YtesZyroskop::okreslStan() {
 	//Serial.printf("%.2f\t %.2f\t %.2f \n",ox,oy,oz);
 #endif
 	//lewo - prawo
-	if (ox >= X_LEWO_PRZECHYL && ox < X_LEWO_LEZE) {
+	if (ox >= X_LEWO_1 && ox < X_LEWO_2) {
 		poprzedniStan = mojStan;
-		mojStan = STAN_ZYROSKOP::LEWO_PRZECHYL;
+		mojStan = STAN_ZYROSKOP::LEWO_1;
 		return;
 	}
-	else if (ox >= X_LEWO_LEZE) {
+	else if (ox >= X_LEWO_2) {
 		poprzedniStan = mojStan;
-		mojStan = STAN_ZYROSKOP::LEWO_LEZE;
+		mojStan = STAN_ZYROSKOP::LEWO_2;
 		return;
 	}
-	else if (ox <= X_PRAWO_PRZECHYL && ox > X_PRAWO_LEZE) {
+	else if (ox <= X_PRAWO_1 && ox > X_PRAWO_2) {
 		poprzedniStan = mojStan;
-		mojStan = STAN_ZYROSKOP::PRAWO_PRZECHYL;
+		mojStan = STAN_ZYROSKOP::PRAWO_1;
 		return;
 	}
-	else if (ox <= X_PRAWO_LEZE) {
+	else if (ox <= X_PRAWO_2) {
 		poprzedniStan = mojStan;
-		mojStan = STAN_ZYROSKOP::PRAWO_LEZE;
+		mojStan = STAN_ZYROSKOP::PRAWO_2;
 		return;
 	};
 	//przod - tyl

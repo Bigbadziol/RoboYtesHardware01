@@ -1,4 +1,11 @@
 //15.24.2023-dom
+//-DMOYSLNA GLOSNOSC muza,efekty , poziom wyciszenia na sam koniec :
+//    - muzyka :
+//    - efekty :
+//    - wyciszenie : 
+
+//zamieniono - najpierw radar,zyroskop, nuda
+
 /*
 * // Uwaga, przyjrzec sie zachowaniu GPIO0 - przyszly radar  , ze wgledu na klod w YtesServo.h moze generowac blad
 * //This is bold text to get your attention, I can make it red as well: It is "\r\n" not "\n\r". <--NA LEDZIKU SPRAWDZIC
@@ -97,6 +104,12 @@ String pelnaOdpowiedz() {
     ret.concat(radar->odpowiedz());
     ret.concat("}");
     ret.concat("#$!#"); // ten znacznik rozpoznaje appka , jest to informacja o koncu bloku danych
+
+#if SERIAL_PD == 1
+    Serial.println("Pelna odpowiedz kontrolera : ");
+    Serial.println(ret.c_str());
+    Serial.println();
+#endif
     return ret;
 };
 //--------------------------------------------------------------------------------------------
@@ -145,7 +158,8 @@ void setup() {
 #endif 
 
     PD_INFO("-----------------------------------------------------");
-    PD_INFO("RoboYtesHardware 1.22");
+    PD_INFO("RoboYtesHardware 1.24");
+    PD_INFO("Cholerne scalanie.");
     PD_INFO("Bardzo duze zmiany w YtesAudio, YtesAudioPolecenie");
     PD_INFO("--");
 
@@ -180,7 +194,10 @@ void setup() {
     audio->ustawCzasNudy(12000L);
     audio->ustawCzasPrzerwaGadanie(5000L, 5000L);
 
-    stanNiePolaczony(); //Oswietlenie utwor - przed po³¹czeniem z aplikacj¹
+    //stanNiePolaczony(); //Oswietlenie utwor - przed po³¹czeniem z aplikacj¹ , nie moze byc : bo inne false, maja byc te 3
+    ledy->wzorNiePolaczony();
+    audio->grajEfekt(0); //zatrzymaj jesli cos gra
+    audio->grajMuzykePowitalna();
 
 #if UZYJ_HARDWARE == 0      //Tylko dla SoftwareSerial
     serialLewy.listen();
